@@ -216,9 +216,16 @@
       var r = el.getBoundingClientRect();
       var left = r.left + win.scrollX, top = r.top + win.scrollY, w = r.width, h = r.height;
       if (!w || !h) return false;
-      // 3) clip-stage matches the element's aspect; translate element to origin, scale to fill
-      stage.style.aspectRatio = w + " / " + h;
-      var k = stage.clientWidth / w;
+      // 3) show the element at its NATURAL size — never upscale (don't distort/enlarge),
+      //    only scale down if it's wider than the available space (so it's never cut).
+      var avail = (stage.parentElement ? stage.parentElement.clientWidth : stage.clientWidth);
+      var k = Math.min(1, avail / w);
+      stage.style.aspectRatio = "auto";
+      stage.style.minHeight = "0";
+      stage.style.width = Math.round(w * k) + "px";
+      stage.style.height = Math.round(h * k) + "px";
+      stage.style.marginLeft = "auto";
+      stage.style.marginRight = "auto";
       frame.style.transform = "translate(" + (-left) + "px," + (-top) + "px)";
       scaler.style.transform = "scale(" + k + ")";
       return true;
