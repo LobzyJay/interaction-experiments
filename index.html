@@ -44,10 +44,11 @@
     transition: padding-left 320ms var(--ease);
   }
   .exp__no { font-family: var(--mono); font-size: 0.82rem; color: var(--muted);
-             transition: color 200ms ease; }
-  .exp__title { font-size: clamp(1.3rem, 3vw, 1.9rem); letter-spacing: -0.02em; font-weight: 600;
+             align-self: start; padding-top: 0.3rem; transition: color 200ms ease; }
+  .exp__body { display: block; }
+  .exp__title { display: block; font-size: clamp(1.3rem, 3vw, 1.9rem); letter-spacing: -0.02em; font-weight: 600;
                 transition: color 200ms ease; }
-  .exp__desc { color: var(--muted); font-size: 0.92rem; margin-top: 0.35rem; max-width: 56ch; }
+  .exp__desc { display: block; color: var(--muted); font-size: 0.92rem; margin-top: 0.35rem; max-width: 56ch; }
   .exp__tags { margin-top: 0.7rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--muted);
          border: 1px solid var(--line); border-radius: 999px; padding: 0.28em 0.7em; }
