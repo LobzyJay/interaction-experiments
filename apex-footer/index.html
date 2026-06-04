@@ -176,7 +176,10 @@
     .footer { padding: 14px; }
     .panel { padding: 90px 74px 360px; }
     .stack { gap: 50px; }
-    .headline h2 { font-size: clamp(34px, 3.5vw, 50px); line-height: 1.04; }
+    /* heading is natural (nowrap) width so the hand sits beside the text,
+       not pushed to the far edge — matches the Figma desktop frame */
+    .headline { align-items: flex-end; gap: 18px; }
+    .headline h2 { flex: 0 0 auto; font-size: clamp(34px, 3.5vw, 50px); line-height: 1.04; }
     .headline h2 .line > span { white-space: nowrap; }
     .hand-wrap { width: 77px; height: 99px; }
     .hand { transform: rotate(3.57deg); }
