@@ -190,18 +190,22 @@
 
     function applyCrop() {
       var win = frame.contentWindow, doc = frame.contentDocument;
+      // 1) render the page at a known desktop width FIRST, so the element lays
+      //    out at full size before we measure it.
+      frame.style.width = s.viewportW + "px";
+      frame.style.height = "10px";
+      void doc.documentElement.offsetWidth;                 // force reflow at new width
+      frame.style.height = doc.documentElement.scrollHeight + "px";
       hideChrome(doc, s.hide);
+      // 2) measure the element (now at the correct desktop layout)
       var el = findEl(doc, s.find);
       if (!el) return false;
       var r = el.getBoundingClientRect();
       var left = r.left + win.scrollX, top = r.top + win.scrollY, w = r.width, h = r.height;
       if (!w || !h) return false;
-      var k = stage.clientWidth / w;
+      // 3) clip-stage matches the element's aspect; translate element to origin, scale to fill
       stage.style.aspectRatio = w + " / " + h;
-      // size the iframe to the full page at the chosen desktop width, then translate the
-      // element to origin and scale the wrapper so the element fills the stage.
-      frame.style.width = s.viewportW + "px";
-      frame.style.height = Math.max(doc.documentElement.scrollHeight, top + h + 40) + "px";
+      var k = stage.clientWidth / w;
       frame.style.transform = "translate(" + (-left) + "px," + (-top) + "px)";
       scaler.style.transform = "scale(" + k + ")";
       return true;
