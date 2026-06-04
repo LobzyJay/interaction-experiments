@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resource Breakdown — STSL (standalone)</title>
+
+  <!-- Fonts lifted from the case study (index.html lines 134-143) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,200;9..40,300;9..40,400;9..40,500&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carattere&display=swap" />
+
+  <style>
+    /* ── Tokens lifted from style.css :root (lines 28-89) — only what the panel uses ── */
+    :root {
+      --color-white:    #FFFFFF;
+      --color-yellow:   #FFC919;
+      --color-midnight: #14141A;
+      --color-red:      #E40202;
+      --color-purple:   #9B91F6;
+
+      --bg:           #000000;
+      --accent:       var(--color-red);
+
+      --font-sans:    'DM Sans', sans-serif;
+
+      --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+      --r-card:   clamp(10px, 1vw, 14px);
+    }
+
+    * { box-sizing: border-box; }
+
+    /* Page shell — centers the single panel on the case study's dark background. */
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--color-white);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100%;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: clamp(20px, 5vw, 64px);
+    }
+    .stage {
+      width: 100%;
+      max-width: 880px;
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       The following block is lifted VERBATIM from style.css lines 4241-4832
+       (the .day-cost panel and every class it uses). Unrelated milestone /
+       replay / card-state rules are kept as-is for fidelity; they're harmless.
+       ════════════════════════════════════════════════════════════════ */
+    .day-cost {
+      margin: clamp(40px, 6vh, 72px) 0 0;
+      padding: clamp(20px, 2.4vw, 32px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 6px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 0 rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(18px, 2.2vh, 28px);
+      color: #FFFFFF;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .day-cost .dc-head { display: flex; flex-direction: column; gap: 8px; }
+    .day-cost .dc-eyebrow {
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 10px; font-weight: 500; letter-spacing: 0.24em;
+      text-transform: uppercase; color: var(--color-yellow);
+      margin: 0;
+    }
+    .day-cost .dc-headline {
+      font-family: var(--font-sans); font-weight: 300;
+      font-size: clamp(1.3rem, 2.2vw, 2rem);
+      line-height: 1.18; letter-spacing: -0.02em;
+      color: #FFFFFF; margin: 0; max-width: 32ch;
+    }
+    .day-cost .dc-rationale {
+      font-family: var(--font-sans); font-weight: 300;
+      font-size: 12px; line-height: 1.5;
+      letter-spacing: 0.01em; font-style: italic;
+      color: rgba(255,255,255,0.5);
+      margin: 6px 0 0; max-width: 52ch;
+    }
+
+    /* ── Scrubber ───────────────────────────────────────────────── */
+    .day-cost .dc-scrubber {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "readout replay"
+        "slider  slider"
+        "marks   marks";
+      align-items: center;
+      gap: 10px 14px;
+      padding: 14px 0 4px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .day-cost .dc-day-readout {
+      grid-area: readout;
+      display: flex; align-items: baseline; gap: 8px;
+    }
+    .day-cost .dc-day-num {
+      font-family: var(--font-sans); font-weight: 300;
+      font-size: clamp(28px, 3vw, 40px); line-height: 1;
+      letter-spacing: -0.03em; color: var(--color-yellow);
+      font-variant-numeric: tabular-nums;
+    }
+    .day-cost .dc-day-label {
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .day-cost .dc-slider {
+      grid-area: slider;
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 22px; margin: 0;
+      background: transparent; cursor: pointer; outline: none;
+    }
+    .day-cost .dc-slider::-webkit-slider-runnable-track {
+      height: 2px; border-radius: 1px;
+      background: linear-gradient(
+        to right,
+        var(--accent) 0%, var(--accent) var(--dc-progress, 0%),
+        rgba(255,255,255,0.18) var(--dc-progress, 0%), rgba(255,255,255,0.18) 100%
+      );
+    }
+    .day-cost .dc-slider::-moz-range-track {
+      height: 2px; border-radius: 1px;
+      background: rgba(255,255,255,0.18);
+    }
+    .day-cost .dc-slider::-moz-range-progress {
+      height: 2px; border-radius: 1px; background: var(--accent);
+    }
+    .day-cost .dc-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #14141a;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 4px 10px rgba(228,2,2,0.45);
+      margin-top: -6px;
+      transition: transform 0.18s cubic-bezier(0.22,1,0.36,1);
+    }
+    .day-cost .dc-slider::-moz-range-thumb {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #14141a;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.18), 0 4px 10px rgba(228,2,2,0.45);
+    }
+    .day-cost .dc-slider:hover::-webkit-slider-thumb,
+    .day-cost .dc-slider:focus-visible::-webkit-slider-thumb { transform: scale(1.15); }
+    .day-cost .dc-slider:focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 2px;
+    }
+    .day-cost .dc-slider.is-autoplay { pointer-events: none; }
+    .day-cost .dc-day-marks {
+      grid-area: marks;
+      display: flex; justify-content: space-between;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 9px; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.4);
+    }
+    .day-cost .dc-day-marks span { display: block; }
+    .day-cost .dc-replay {
+      grid-area: replay;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 3px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+    .day-cost .dc-replay:hover,
+    .day-cost .dc-replay:focus-visible {
+      color: var(--color-yellow);
+      border-color: var(--color-yellow);
+      outline: none;
+    }
+
+    /* ── Cards (two columns) ────────────────────────────────────── */
+    .day-cost .dc-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(12px, 1.4vw, 20px);
+      background: transparent;
+    }
+    .day-cost .dc-card {
+      position: relative;
+      padding: clamp(18px, 2vw, 24px);
+      background: #000000;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: var(--r-card);
+      display: flex; flex-direction: column; gap: 14px;
+      min-height: 240px;
+    }
+    .day-cost .dc-card-eyebrow {
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.5); margin: 0;
+    }
+
+    /* ── Cost card ──────────────────────────────────────────────── */
+    .day-cost .dc-card--cost { gap: 28px; }
+    .day-cost .dc-cost-row {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      grid-template-areas:
+        "label  amount"
+        "bar    bar";
+      gap: 10px 12px;
+      align-items: baseline;
+    }
+    .day-cost .dc-cost-label {
+      grid-area: label;
+      font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .day-cost .dc-cost-amount-wrap {
+      grid-area: amount;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .day-cost .dc-cost-amount {
+      font-family: var(--font-sans); font-weight: 400;
+      font-size: clamp(20px, 1.8vw, 24px); line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      transition: color 0.28s ease;
+    }
+    .day-cost .dc-cost-naira {
+      font-family: var(--font-sans);
+      font-weight: 300;
+      font-size: 12px;
+      letter-spacing: 0;
+      color: rgba(255,255,255,0.45);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+    .day-cost .dc-cost-row:nth-child(2) .dc-cost-amount.is-live { color: var(--accent); }
+    .day-cost .dc-cost-row:nth-child(3) .dc-cost-amount.is-live { color: var(--color-purple); }
+    .day-cost .dc-bar {
+      grid-area: bar;
+      height: 6px; width: 100%;
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px; overflow: hidden;
+    }
+    .day-cost .dc-bar-fill {
+      height: 100%; width: 0%;
+      border-radius: 8px;
+      transition: width 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .day-cost .dc-bar-fill--studio { background: var(--accent); }
+    .day-cost .dc-bar-fill--claude { background: var(--color-purple); }
+    .day-cost .dc-card-summary {
+      font-family: var(--font-sans); font-size: 12px; line-height: 1.5;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      margin: auto 0 0; padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── Burn-gauge card (race-car HUD instrument cluster) ──────── */
+    .day-cost .dc-card--burn { gap: 18px; }
+    .day-cost .dc-card--burn .dc-card-eyebrow-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    /* Engine pulse dot — pulses faster as gauge fills. --pulse-rate from JS. */
+    .day-cost .dc-pulse-dot {
+      --pulse-rate: 1.4s;
+      --pulse-color: rgba(255,255,255,0.85);
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--pulse-color);
+      box-shadow: 0 0 8px var(--pulse-color);
+      animation: dcEnginePulse var(--pulse-rate) cubic-bezier(0.45, 0, 0.15, 1) infinite;
+      flex-shrink: 0;
+    }
+    @keyframes dcEnginePulse {
+      0%, 100% { opacity: 0.35; transform: scale(0.85); }
+      50%      { opacity: 1;    transform: scale(1.15); }
+    }
+    .day-cost .dc-gauge {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      justify-content: center;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.05) 0px,
+        rgba(255,255,255,0.05) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      background-position: center;
+      background-size: 100% 100%;
+      border-radius: 8px;
+      padding: 6px 4px 0;
+    }
+    /* Outer ring — thin white-low-alpha base with a red overlay at 80–100%. */
+    .day-cost .dc-gauge-outer-bg {
+      stroke: rgba(255,255,255,0.10);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+    }
+    .day-cost .dc-gauge-outer-redline {
+      --redline-fill: 0;
+      stroke: var(--color-red);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-dasharray: calc(var(--redline-fill) * 20) 100;
+      stroke-dashoffset: -80;
+      opacity: calc(var(--redline-fill));
+      filter: drop-shadow(0 0 4px rgba(228,2,2,0.55));
+      transition: stroke-dasharray 0.4s cubic-bezier(0.45, 0, 0.15, 1),
+                  opacity 0.4s cubic-bezier(0.45, 0, 0.15, 1);
+    }
+    .day-cost .dc-gauge-svg {
+      width: 100%;
+      max-width: 260px;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+    .day-cost .dc-gauge-bg {
+      stroke: rgba(255,255,255,0.08);
+      stroke-width: 6;
+      stroke-linecap: round;
+    }
+    .day-cost .dc-gauge-fg {
+      --gauge-glow-blur: 3px;
+      --gauge-glow-color: rgba(255, 255, 255, 0.35);
+      stroke-width: 6;
+      stroke-linecap: round;
+      fill: none;
+      filter: drop-shadow(0 0 var(--gauge-glow-blur) var(--gauge-glow-color));
+      transition: stroke-dashoffset 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                  filter 0.6s cubic-bezier(0.45, 0, 0.15, 1);
+      will-change: stroke-dashoffset;
+    }
+    /* Tick hierarchy: short = every 10% (subtle), long = quarter ticks (brighter). */
+    .day-cost .dc-gauge-ticks-short line {
+      stroke: rgba(255,255,255,0.28);
+      stroke-width: 1;
+      stroke-linecap: round;
+      transition: stroke 0.3s ease;
+    }
+    .day-cost .dc-gauge-ticks-short line.is-passed {
+      stroke: rgba(255,255,255,0.7);
+    }
+    .day-cost .dc-gauge-ticks-long line {
+      stroke: rgba(255,255,255,0.55);
+      stroke-width: 1.4;
+      stroke-linecap: round;
+      transition: stroke 0.3s ease;
+    }
+    .day-cost .dc-gauge-ticks-long line.is-passed {
+      stroke: var(--color-yellow);
+    }
+    .day-cost .dc-gauge-ticks-long line.is-passed.is-redline {
+      stroke: var(--color-red);
+    }
+    .day-cost .dc-gauge-needle {
+      --needle-glow: rgba(228, 2, 2, 0);
+      stroke: var(--color-red);
+      stroke-width: 2;
+      stroke-linecap: round;
+      transform-origin: 100px 100px;
+      transform: rotate(-90deg);
+      filter: drop-shadow(0 0 4px var(--needle-glow));
+      transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                  filter 0.6s cubic-bezier(0.45, 0, 0.15, 1);
+      will-change: transform;
+    }
+    /* Sweep highlight — duplicate ghost-needle that lags behind the live needle. */
+    .day-cost .dc-gauge-needle-trail {
+      stroke: var(--color-yellow);
+      stroke-width: 6;
+      stroke-linecap: round;
+      opacity: 0.28;
+      transform-origin: 100px 100px;
+      transform: rotate(-90deg);
+      filter: blur(5px);
+      transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.6s ease;
+      pointer-events: none;
+      will-change: transform;
+    }
+    .day-cost .dc-gauge-pivot {
+      fill: #FFFFFF;
+      stroke: rgba(20,20,26,0.6);
+      stroke-width: 1;
+      transition: fill 0.2s cubic-bezier(0.45, 0, 0.15, 1),
+                  r 0.2s cubic-bezier(0.45, 0, 0.15, 1);
+    }
+    .day-cost .dc-gauge-pulse {
+      stroke: var(--color-yellow);
+      stroke-width: 1.4;
+      opacity: 0;
+      transform-origin: 100px 100px;
+      transform: scale(1);
+      pointer-events: none;
+    }
+    .day-cost .dc-gauge.is-pulsing .dc-gauge-pulse {
+      animation: dcPulseRing 600ms cubic-bezier(0.45, 0, 0.15, 1) forwards;
+    }
+    .day-cost .dc-gauge.is-pulsing .dc-gauge-pivot {
+      animation: dcPulsePivot 600ms cubic-bezier(0.45, 0, 0.15, 1);
+    }
+    @keyframes dcPulseRing {
+      0%   { opacity: 0;   transform: scale(1);   }
+      20%  { opacity: 0.9; transform: scale(1.4); }
+      100% { opacity: 0;   transform: scale(3.6); }
+    }
+    @keyframes dcPulsePivot {
+      0%   { fill: #FFFFFF; }
+      35%  { fill: var(--color-yellow); }
+      100% { fill: #FFFFFF; }
+    }
+    .day-cost .dc-gauge-pulse-label {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--color-yellow);
+      margin: 0;
+      height: 12px;
+      opacity: 0;
+      transition: opacity 200ms cubic-bezier(0.45, 0, 0.15, 1);
+      text-align: center;
+    }
+    .day-cost .dc-gauge-pulse-label.is-visible {
+      opacity: 1;
+      transition: opacity 120ms cubic-bezier(0.45, 0, 0.15, 1);
+    }
+    .day-cost .dc-gauge-readout {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-top: -4px;
+    }
+    .day-cost .dc-gauge-readout-label {
+      font-family: var(--font-sans);
+      font-size: 9.5px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+    .day-cost .dc-gauge-readout-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .day-cost .dc-gauge-num {
+      font-family: var(--font-sans);
+      font-weight: 500;
+      font-size: clamp(28px, 3.2vw, 36px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: #FFFFFF;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: 'tnum' 1;
+      transform: scale(var(--token-scale, 0));
+      transform-origin: center center;
+      transition: color 0.28s ease,
+                  transform 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .day-cost .dc-gauge-num.is-burning  { color: var(--color-yellow); }
+    .day-cost .dc-gauge-num.is-exhausted { color: var(--color-red); }
+    /* Redline warning pill — fades in above 80% with a slow opacity pulse. */
+    .day-cost .dc-gauge-readout-main { position: relative; }
+    .day-cost .dc-redline-pill {
+      font-family: var(--font-sans);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #FFFFFF;
+      background: var(--color-red);
+      border: 1px solid rgba(255,255,255,0.25);
+      padding: 3px 7px;
+      border-radius: 3px;
+      --hud-static-opacity: 0.75;
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 50%;
+      transform: translate(0, -50%);
+      opacity: 0.75;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .day-cost .dc-redline-pill.is-active {
+      opacity: 1;
+    }
+    @keyframes dcRedlineThrob {
+      0%, 100% { opacity: 0.6; }
+      50%      { opacity: 1;   }
+    }
+    .day-cost .dc-gauge-label {
+      font-family: var(--font-sans);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      font-variant-numeric: tabular-nums;
+    }
+    .day-cost .dc-gauge-status {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      line-height: 1.5;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      margin: auto 0 0;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      transition: color 0.28s ease;
+    }
+    .day-cost .dc-gauge-status.is-burning  { color: var(--color-yellow); }
+    .day-cost .dc-gauge-status.is-exhausted { color: var(--color-red); }
+
+    /* ── Mobile: collapse to single column ──────────────────────── */
+    @media (max-width: 720px) {
+      .day-cost { padding: 18px; gap: 16px; }
+      .day-cost .dc-cards { grid-template-columns: 1fr; }
+      .day-cost .dc-card + .dc-card { border-left: 0; border-top: 1px solid rgba(255,255,255,0.10); }
+      .day-cost .dc-card { min-height: 0; }
+      .day-cost .dc-scrubber {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "readout"
+          "slider"
+          "marks"
+          "replay";
+      }
+      .day-cost .dc-replay { justify-self: start; }
+      .day-cost .dc-day-marks { font-size: 8.5px; }
+    }
+
+    /* ── Reduced motion ─────────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .day-cost .dc-bar-fill,
+      .day-cost .dc-cost-amount,
+      .day-cost .dc-gauge-fg,
+      .day-cost .dc-gauge-needle,
+      .day-cost .dc-gauge-needle-trail,
+      .day-cost .dc-gauge-num,
+      .day-cost .dc-gauge-outer-redline { transition: none; }
+      .day-cost .dc-gauge.is-pulsing .dc-gauge-pulse,
+      .day-cost .dc-gauge.is-pulsing .dc-gauge-pivot,
+      .day-cost .dc-pulse-dot,
+      .day-cost .dc-redline-pill.is-active { animation: none; }
+    }
+
+    /* NOTE: the source [data-reveal] rule (style.css 3655-3664) which sets
+       opacity:0 / translateY(24px) is intentionally NOT included, and the
+       figure below carries no data-reveal attribute, so the panel is visible
+       and interactive on load with no scroll-reveal gating. */
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <!-- Markup lifted verbatim from case-study index.html lines 726-820,
+         minus the data-reveal attribute on <figure> so nothing hides it. -->
+    <figure class="day-cost" aria-label="Days versus cost over time">
+      <header class="dc-head">
+        <p class="dc-eyebrow">resource breakdown</p>
+        <h3 class="dc-headline">What I paid, and what the tokens did across the same four days.</h3>
+      </header>
+      <p class="dc-rationale">Running cost on the left, context window on the right. Studio comparison based on a 5 to 8 person team over 12 weeks.</p>
+      <div class="dc-scrubber">
+        <div class="dc-day-readout"><span class="dc-day-num">0</span><span class="dc-day-label">Day 0</span></div>
+        <input type="range" class="dc-slider" min="0" max="84" step="0.5" value="0" aria-label="Day scrubber, drag to scrub through the timeline">
+        <div class="dc-day-marks" aria-hidden="true">
+          <span data-mark="0">0</span>
+          <span data-mark="4">4</span>
+          <span data-mark="14">14</span>
+          <span data-mark="28">28</span>
+          <span data-mark="56">56</span>
+          <span data-mark="84">84</span>
+        </div>
+      </div>
+      <div class="dc-cards">
+        <div class="dc-card dc-card--cost">
+          <p class="dc-card-eyebrow">running cost</p>
+          <div class="dc-cost-row">
+            <span class="dc-cost-label">Studio</span>
+            <span class="dc-cost-amount-wrap">
+              <span class="dc-cost-amount" data-cost-studio>$0</span>
+              <span class="dc-cost-naira" data-cost-studio-ng>₦0</span>
+            </span>
+            <div class="dc-bar"><div class="dc-bar-fill dc-bar-fill--studio"></div></div>
+          </div>
+          <div class="dc-cost-row">
+            <span class="dc-cost-label">Claude</span>
+            <span class="dc-cost-amount-wrap">
+              <span class="dc-cost-amount" data-cost-claude>$0</span>
+              <span class="dc-cost-naira" data-cost-claude-ng>₦0</span>
+            </span>
+            <div class="dc-bar"><div class="dc-bar-fill dc-bar-fill--claude"></div></div>
+          </div>
+          <p class="dc-card-summary">Drag the scrubber to compare.</p>
+        </div>
+        <div class="dc-card dc-card--burn" data-burn-card>
+          <div class="dc-card-eyebrow-row">
+            <p class="dc-card-eyebrow">context window</p>
+            <span class="dc-pulse-dot" data-pulse-dot aria-hidden="true"></span>
+          </div>
+          <div class="dc-gauge" role="img" aria-label="Token burn gauge, three sessions across the 4 build days then maxes out as the context window exhausts">
+            <svg class="dc-gauge-svg" viewBox="0 0 200 130" aria-hidden="true">
+              <defs>
+                <linearGradient id="dc-gauge-grad" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%"   stop-color="#FFC919"/>
+                  <stop offset="100%" stop-color="#E40202"/>
+                </linearGradient>
+              </defs>
+              <!-- Outer ring base (low-alpha white, full sweep) -->
+              <path class="dc-gauge-outer-bg" d="M 16 100 A 84 84 0 0 1 184 100" fill="none" pathLength="100"/>
+              <!-- Outer ring redline overlay (red, only the 80%→100% segment) -->
+              <path class="dc-gauge-outer-redline" d="M 16 100 A 84 84 0 0 1 184 100" fill="none" pathLength="100"/>
+              <!-- Background semicircle (full path) -->
+              <path class="dc-gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" pathLength="100"/>
+              <!-- Foreground arc: single gradient stroke driven by the gauge-fill CSS variable (0..1). -->
+              <path class="dc-gauge-fg"
+                    d="M 20 100 A 80 80 0 0 1 180 100" fill="none"
+                    stroke="url(#dc-gauge-grad)"/>
+              <!-- Tick hierarchy: long ticks at 0/25/50/75/100 with day labels, short ticks every 10% -->
+              <g class="dc-gauge-ticks-short" data-ticks-short>
+                <!-- short ticks at 10,20,30,40,60,70,80,90 percent -->
+              </g>
+              <g class="dc-gauge-ticks-long" data-ticks-long>
+                <!-- long ticks at 0,25,50,75,100 -->
+              </g>
+              <g class="dc-gauge-tick-labels" font-family="DM Sans, sans-serif" font-size="7" font-weight="500" fill="rgba(255,255,255,0.5)" text-anchor="middle">
+                <text x="6"   y="103">0</text>
+                <text x="29"  y="22">1</text>
+                <text x="100" y="9">2</text>
+                <text x="171" y="22">3</text>
+                <text x="194" y="103">4</text>
+              </g>
+              <line class="dc-gauge-needle" x1="100" y1="100" x2="100" y2="32"/>
+              <line class="dc-gauge-needle-trail" x1="100" y1="100" x2="100" y2="40"/>
+              <circle class="dc-gauge-pivot" cx="100" cy="100" r="4"/>
+              <circle class="dc-gauge-pulse" cx="100" cy="100" r="4" fill="none"/>
+            </svg>
+            <div class="dc-gauge-readout">
+              <span class="dc-gauge-readout-label">tokens used</span>
+              <div class="dc-gauge-readout-main">
+                <span class="dc-gauge-num" data-token-num>0</span>
+                <span class="dc-redline-pill" data-redline-pill aria-hidden="true">REDLINE</span>
+              </div>
+              <span class="dc-gauge-label" data-token-label>day 0</span>
+            </div>
+            <p class="dc-gauge-pulse-label" data-pulse-label aria-hidden="true">new session</p>
+          </div>
+          <p class="dc-gauge-status" data-token-status>Claude Sonnet</p>
+        </div>
+      </div>
+    </figure>
+  </div>
+
+  <script>
+  /* ════════════════════════════════════════════════════════════════
+     JS lifted verbatim from case-study script.js lines 671-935
+     (initDayCost). The only change: the scroll-tied progress block is
+     neutralized — instead of binding window scroll, we just paint day 0 on
+     load and let the slider's own 'input' handler drive everything. The day→
+     value mappings, gauge needle math, token math, and redline/pulse logic
+     are unchanged from source.
+     ════════════════════════════════════════════════════════════════ */
+  function initDayCost() {
+    const fig = document.querySelector('.day-cost');
+    if (!fig) return;
+    const slider = fig.querySelector('.dc-slider');
+    const dayNum = fig.querySelector('.dc-day-num');
+    const dayLabel = fig.querySelector('.dc-day-label');
+    const studioAmount = fig.querySelector('[data-cost-studio]');
+    const claudeAmount = fig.querySelector('[data-cost-claude]');
+    const studioNaira = fig.querySelector('[data-cost-studio-ng]');
+    const claudeNaira = fig.querySelector('[data-cost-claude-ng]');
+    const studioBar = fig.querySelector('.dc-bar-fill--studio');
+    const claudeBar = fig.querySelector('.dc-bar-fill--claude');
+    const summary = fig.querySelector('.dc-card-summary');
+    const tokenNum = fig.querySelector('[data-token-num]');
+    const tokenLabel = fig.querySelector('[data-token-label]');
+    const tokenStatus = fig.querySelector('[data-token-status]');
+    const gauge = fig.querySelector('.dc-gauge');
+    const gaugeFg = fig.querySelector('.dc-gauge-fg');
+    const gaugeNeedle = fig.querySelector('.dc-gauge-needle');
+    // Compute the actual path length once at init and pin both dasharray +
+    // initial offset directly on the element via attributes.
+    const GAUGE_LEN = gaugeFg ? gaugeFg.getTotalLength() : 251.33;
+    if (gaugeFg) {
+      gaugeFg.setAttribute('stroke-dasharray', GAUGE_LEN);
+      gaugeFg.setAttribute('stroke-dashoffset', GAUGE_LEN);
+    }
+    const gaugeNeedleTrail = fig.querySelector('.dc-gauge-needle-trail');
+    const redlinePill = fig.querySelector('[data-redline-pill]');
+    const pulseDot = fig.querySelector('[data-pulse-dot]');
+    const ticksShortHost = fig.querySelector('[data-ticks-short]');
+    const ticksLongHost = fig.querySelector('[data-ticks-long]');
+    const pulseLabel = fig.querySelector('[data-pulse-label]');
+
+    // Build tick hierarchy along the 180° arc.
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    function tickAt(pct, longTick) {
+      const angle = Math.PI * (1 - pct / 100);
+      const cx = 100, cy = 100;
+      const rIn = 80, rOut = longTick ? 90 : 85;
+      const x1 = cx + Math.cos(angle) * rIn;
+      const y1 = cy - Math.sin(angle) * rIn;
+      const x2 = cx + Math.cos(angle) * rOut;
+      const y2 = cy - Math.sin(angle) * rOut;
+      const line = document.createElementNS(SVG_NS, 'line');
+      line.setAttribute('x1', x1.toFixed(2));
+      line.setAttribute('y1', y1.toFixed(2));
+      line.setAttribute('x2', x2.toFixed(2));
+      line.setAttribute('y2', y2.toFixed(2));
+      line.dataset.pct = String(pct);
+      return line;
+    }
+    if (ticksShortHost && ticksLongHost) {
+      [10, 20, 30, 40, 60, 70, 80, 90].forEach(p => ticksShortHost.appendChild(tickAt(p, false)));
+      [0, 25, 50, 75, 100].forEach(p => {
+        const line = tickAt(p, true);
+        if (p >= 80) line.classList.add('is-redline');
+        ticksLongHost.appendChild(line);
+      });
+    }
+
+    if (!slider || !dayNum || !studioBar || !claudeBar) return;
+
+    // Per-day token totals from the real STSL build session logs.
+    const TOKEN_DATA = [
+      { day: 1, total: 17_019_602 },
+      { day: 2, total: 40_632_391 },
+      { day: 3, total: 63_603_609 },
+      { day: 4, total: 24_977_120 },
+    ];
+    const TOKEN_TOTAL = TOKEN_DATA.reduce((s, x) => s + x.total, 0);
+    const TOKEN_CUM = TOKEN_DATA.reduce((acc, x) => {
+      acc.push((acc[acc.length - 1] || 0) + x.total);
+      return acc;
+    }, []);
+    const fmtNum = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 0 });
+    const BURN_DAY = 4;
+
+    const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+    const fmtNG = new Intl.NumberFormat('en-NG', { maximumFractionDigits: 0 });
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const STUDIO_TOTAL = 10_000;
+    const CLAUDE_TOTAL = 65;
+    const NGN_RATE = 1540;
+    const SHIP_DAY = 3.5;
+    const MAX_DAY = 84;
+
+    // Track which session the scrubber is currently in.
+    let lastSessionIdx = sessionIndexFor(0);
+    function sessionIndexFor(d) {
+      if (d < 1) return 0;
+      if (d < 2) return 1;
+      return 2;
+    }
+
+    function firePulse() {
+      if (reduced) return;
+      gauge.classList.remove('is-pulsing');
+      void gauge.offsetWidth;
+      gauge.classList.add('is-pulsing');
+      if (pulseLabel) {
+        pulseLabel.classList.add('is-visible');
+        clearTimeout(firePulse._t);
+        firePulse._t = setTimeout(() => pulseLabel.classList.remove('is-visible'), 800);
+      }
+      setTimeout(() => gauge.classList.remove('is-pulsing'), 620);
+    }
+
+    function renderDayReadout(d) {
+      const shown = Math.round(d);
+      dayNum.textContent = String(shown);
+      dayLabel.textContent = `Day ${shown}`;
+    }
+
+    function update(rawDay) {
+      const d = Math.round(Math.max(0, Math.min(MAX_DAY, rawDay)) * 2) / 2;
+      renderDayReadout(d);
+
+      // ── Running-cost bars + amounts ────────────────────────────
+      const studioCost = Math.round((d / MAX_DAY) * STUDIO_TOTAL);
+      studioAmount.textContent = fmt.format(studioCost);
+      studioAmount.classList.toggle('is-live', d > 0);
+      if (studioNaira) studioNaira.textContent = `₦${fmtNG.format(studioCost * NGN_RATE)}`;
+      studioBar.style.width = `${(d / MAX_DAY) * 100}%`;
+
+      const claudeCost = d >= SHIP_DAY
+        ? CLAUDE_TOTAL
+        : Math.round((d / SHIP_DAY) * CLAUDE_TOTAL);
+      claudeAmount.textContent = fmt.format(claudeCost);
+      claudeAmount.classList.toggle('is-live', d > 0);
+      if (claudeNaira) claudeNaira.textContent = `₦${fmtNG.format(claudeCost * NGN_RATE)}`;
+      claudeBar.style.width = `${(claudeCost / STUDIO_TOTAL) * 100}%`;
+
+      fig.style.setProperty('--dc-progress', `${(d / MAX_DAY) * 100}%`);
+
+      if (d <= 0) {
+        summary.textContent = 'Drag the scrubber to compare.';
+      } else {
+        const diff = studioCost - claudeCost;
+        summary.textContent = `${fmt.format(diff)} less than the agency at this point.`;
+      }
+
+      // ── Gauge (arc, needle, glow, redline, pulse, ticks) ───────
+      if (!(gaugeFg && gaugeNeedle && tokenNum)) return;
+      const scrollProgress = Math.max(0, Math.min(1, d / MAX_DAY));
+      const dayMarker = Math.min(Math.floor(scrollProgress * 5), 4);
+      const fill = dayMarker / 4; // 0, 0.25, 0.5, 0.75, 1
+      gaugeFg.setAttribute('stroke-dashoffset', ((1 - fill) * GAUGE_LEN).toFixed(2));
+      gaugeNeedle.style.transform = `rotate(${(-90 + fill * 180).toFixed(2)}deg)`;
+
+      if (gaugeNeedleTrail) {
+        gaugeNeedleTrail.style.transform = `rotate(${(-90 + fill * 180).toFixed(2)}deg)`;
+      }
+
+      // ── Token counter + scale ──────────────────────────────────
+      const scrollDay = fill * BURN_DAY;
+      let tokensSoFar;
+      if (scrollDay <= 0) tokensSoFar = 0;
+      else if (scrollDay >= BURN_DAY) tokensSoFar = TOKEN_TOTAL;
+      else {
+        const idx = Math.floor(scrollDay);
+        const frac = scrollDay - idx;
+        const base = idx > 0 ? TOKEN_CUM[idx - 1] : 0;
+        const next = TOKEN_DATA[idx]?.total || 0;
+        tokensSoFar = Math.round(base + frac * next);
+      }
+      tokenNum.textContent = fmtNum.format(tokensSoFar);
+      const tokenScale = fill <= 0 ? 0 : Math.pow(fill, 0.6);
+      tokenNum.style.setProperty('--token-scale', tokenScale.toFixed(4));
+
+      // ── Token label + status text ──────────────────────────────
+      const dayN = Math.min(Math.ceil(d), BURN_DAY);
+      tokenLabel.textContent = d <= 0
+        ? 'day 0'
+        : (d >= BURN_DAY ? 'day 4 — context full' : `day ${dayN}`);
+
+      tokenStatus.textContent = d < 2 ? 'Claude Sonnet' : 'Claude Opus 4.7';
+      tokenNum.classList.remove('is-burning', 'is-exhausted');
+      if (d >= 3 && d < BURN_DAY) {
+        tokenNum.classList.add('is-burning');
+      } else if (d >= BURN_DAY) {
+        tokenNum.classList.add('is-exhausted');
+      }
+
+      // Reset-pulse on session boundary crossings.
+      const idx = sessionIndexFor(d);
+      if (idx !== lastSessionIdx) {
+        firePulse();
+        lastSessionIdx = idx;
+      }
+    }
+
+    slider.addEventListener('input', (e) => {
+      update(parseFloat(e.target.value));
+    });
+
+    // Standalone: no scroll-tied progress. Paint the initial state from the
+    // slider's own value so the panel is fully live on load.
+    update(parseFloat(slider.value));
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDayCost);
+  } else {
+    initDayCost();
+  }
+  </script>
+</body>
+</html>
