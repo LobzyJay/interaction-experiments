@@ -120,10 +120,10 @@
         forceVisible: [".day-cost", ".chapter--swiss"]
       },
       "agmb-viz": {
-        title: "Building Trace Viz", label: "AGMB · canvas + parallax",
-        caption: "A <em>canvas line-trace</em> drawing itself over the building, parallaxing slower than the scroll. Scroll the stage.",
-        src: "https://lobzyjay.github.io/agmb-website/agmb-apply.html", srcnote: "AGMB · apply page",
-        mode: "scroll", hide: ["nav", ".scroll-progress", "#mobile-nav"], scrollTo: 0, viewportW: 1280
+        title: "Dithered Tile Viz", label: "AGMB design system · cursor-aware",
+        caption: "Per-product silhouettes Bayer-dithered into dot fields — <em>move your cursor over a tile</em> to displace the dots (iron-filings repulsion).",
+        src: "https://lobzyjay.github.io/agmb-design-system/", srcnote: "AGMB design system",
+        mode: "crop", find: { within: "section", text: "Dithered tile viz" }, viewportW: 1280
       },
       "voltex-hero": {
         title: "Hero Scene", label: "Voltex · Three.js + Lenis",
