@@ -19,7 +19,7 @@ Highlight red (`#e40202`) is sampled from [artbyade.com](https://artbyade.com).
 
 ## How it works
 
-The studies page (`index.html`) is a gallery. Each study is a **click-to-load `<iframe>`** pointing at the live deploy — they share the `lobzyjay.github.io` origin, so framing just works, and nothing loads until you click (six full sites won't boot at once). Apex Footer (study 01) is the one self-built page in this repo (`/apex-footer`); the rest embed their source projects directly.
+The studies page (`index.html`) is a clean card list. Each study **opens its live deploy in a new tab** — no inline embeds, so nothing heavy loads until you choose to. Apex Footer (study 01) is the one self-built page in this repo (`/apex-footer`); the rest open their source projects directly on GitHub Pages.
 
 ## Running locally
 
@@ -31,4 +31,4 @@ python3 -m http.server 8000
 
 ## Adding a study
 
-Add a `<section class="study">` to `index.html` with a `data-src` (live URL or local path) and a row to the table above. No build step.
+Add an `<li><a class="study" href="…">` block to `index.html` (number, title, source, description, tags) and a row to the table above. No build step.
