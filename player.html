@@ -113,10 +113,11 @@
         mode: "crop", find: { within: ".group\\/stage", text: "FOOTER ATMOSPHERE" }, viewportW: 1440
       },
       "stsl-speedometer": {
-        title: "Speedometer Scroll", label: "STSL case study · drag the scrubber",
-        caption: "<em>Drag the day-scrubber</em> — it drives the running-cost bars and the speedometer gauge. (Opens the live case study.)",
-        src: "https://www.artbyade.com/case-study/stsl/#ch-08-working-with-claude", srcnote: "artbyade.com · STSL case study",
-        mode: "embed"
+        title: "Resource Breakdown", label: "STSL case study · drag the scrubber",
+        caption: "<em>Drag the day-scrubber</em> — it drives the running-cost bars and the speedometer gauge.",
+        src: "https://lobzyjay.github.io/Portfolio/case-study/stsl/", srcnote: "STSL case study · day-cost",
+        mode: "crop", find: { selector: ".day-cost" }, viewportW: 1280,
+        forceVisible: [".day-cost", ".chapter--swiss"]
       },
       "agmb-viz": {
         title: "Building Trace Viz", label: "AGMB · canvas + parallax",
@@ -170,6 +171,17 @@
       return null;
     }
 
+    // Force scroll-reveal-gated elements visible (GSAP sets inline opacity:0 /
+    // transform; injected !important overrides it) so a cropped demo isn't blank.
+    function forceVisible(doc, sels) {
+      if (!sels || !sels.length) return;
+      try {
+        var st = doc.createElement("style");
+        st.textContent = sels.join(",") + "{opacity:1 !important;transform:none !important;visibility:visible !important;}";
+        doc.head.appendChild(st);
+      } catch (e) {}
+    }
+
     function hideChrome(doc, hide) {
       (hide || []).forEach(function (sel) {
         try { [].slice.call(doc.querySelectorAll(sel)).forEach(function (el) { el.style.display = "none"; }); } catch (e) {}
@@ -195,6 +207,7 @@
       frame.style.width = s.viewportW + "px";
       frame.style.height = "10px";
       void doc.documentElement.offsetWidth;                 // force reflow at new width
+      forceVisible(doc, s.forceVisible);                    // un-gate scroll-reveal demos
       frame.style.height = doc.documentElement.scrollHeight + "px";
       hideChrome(doc, s.hide);
       // 2) measure the element (now at the correct desktop layout)
