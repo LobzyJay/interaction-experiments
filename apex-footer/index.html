@@ -160,6 +160,9 @@
     .blob:hover { animation: jiggle 420ms var(--eo); }
     .blob:hover .blob__label::after { clip-path: inset(0 0 0 100%); }  /* wipe off left→right (reading direction) */
   }
+  /* touch / tap interaction (no hover on mobile): tap to jiggle + un-strike */
+  .blob.is-jiggle { animation: jiggle 460ms var(--eo); }
+  .blob.is-tapped .blob__label::after { clip-path: inset(0 0 0 100%); }
   .blob:active { transform: scale(0.96); }
   .blob:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 6px; }
 
@@ -304,6 +307,23 @@
       requestAnimationFrame(function () {
         var r = panel.getBoundingClientRect();
         if (r.top < window.innerHeight && r.bottom > 0) requestAnimationFrame(reveal);
+      });
+    })();
+
+    /* ---- tap interaction: on touch (no hover), tapping a blob jiggles
+            it and wipes off the strikethrough (toggle) ------------------ */
+    (function () {
+      document.querySelectorAll(".blob").forEach(function (blob) {
+        blob.addEventListener("click", function (e) {
+          e.preventDefault();
+          blob.classList.toggle("is-tapped");
+          if (!reduce) {
+            blob.classList.remove("is-jiggle");
+            void blob.offsetWidth;          // restart the animation
+            blob.classList.add("is-jiggle");
+          }
+        });
+        blob.addEventListener("animationend", function () { blob.classList.remove("is-jiggle"); });
       });
     })();
 

@@ -24,40 +24,47 @@
     min-height: 100dvh; display: flex; flex-direction: column;
     padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1.25rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 3rem);
   }
-  .shell { width: 100%; max-width: 1240px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+  .shell { width: 100%; max-width: 1320px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
 
   .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-            margin-bottom: clamp(1.4rem, 3vw, 2.2rem); }
+            margin-bottom: clamp(1.2rem, 2.5vw, 1.8rem); }
   .back { font-family: var(--mono); font-size: 0.76rem; letter-spacing: 0.04em; color: var(--muted);
-          text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
-          transition: color 180ms ease; }
+          text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; transition: color 180ms ease; }
   .back span { display: inline-block; transition: transform 300ms var(--ease); }
   .back:hover { color: var(--ink); }
   .back:hover span { transform: translateX(-3px); }
   .label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
            color: var(--faint); text-align: right; }
 
-  .head { margin-bottom: clamp(1.1rem, 2.5vw, 1.6rem); }
+  .head { margin-bottom: clamp(1rem, 2.2vw, 1.5rem); }
   .title { font-size: clamp(1.9rem, 5vw, 3.1rem); line-height: 1.0; letter-spacing: -0.03em;
            font-weight: 660; color: var(--red); }      /* the one red element */
-  .caption { color: var(--muted); font-size: clamp(0.95rem, 1.6vw, 1.05rem); max-width: 64ch;
-             margin-top: 0.7rem; }
+  .caption { color: var(--muted); font-size: clamp(0.95rem, 1.6vw, 1.05rem); max-width: 66ch; margin-top: 0.7rem; }
   .caption em { color: var(--ink); font-style: normal; font-weight: 600; }
 
-  .stage { position: relative; flex: 1; min-height: 60vh; margin-top: clamp(1.2rem, 3vw, 2rem);
-           background: var(--stage); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
-  .stage iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+  /* stage = clip window. aspect is set per-study once the element is measured. */
+  .stage { position: relative; width: 100%; background: var(--stage);
+           border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+           margin-top: clamp(1rem, 2.5vw, 1.6rem); min-height: 320px; }
+  .stage.is-scroll { flex: 1; }
+  .scaler { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  .stage iframe { border: 0; display: block; background: #0c0c0d; opacity: 0; transition: opacity 240ms ease; }
+  .stage.ready iframe { opacity: 1; }
+  /* scroll mode: iframe simply fills the stage and scrolls */
+  .stage.is-scroll iframe { position: absolute; inset: 0; width: 100%; height: 100%; }
+
   .stage__loading { position: absolute; inset: 0; display: grid; place-items: center;
-                    font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.14em;
-                    text-transform: uppercase; color: var(--faint);
-                    pointer-events: none; transition: opacity 400ms ease; }
+                    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
+                    text-transform: uppercase; color: var(--faint); pointer-events: none;
+                    transition: opacity 300ms ease; z-index: 2; }
+  .stage.ready .stage__loading { opacity: 0; }
 
   .foot { margin-top: 1rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;
           font-family: var(--mono); font-size: 0.72rem; color: var(--faint); letter-spacing: 0.04em; }
   .foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
   .foot a:hover { color: var(--ink); }
 
-  @media (prefers-reduced-motion: reduce) { .back span { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .back span, .stage iframe { transition: none; } }
 </style>
 </head>
 <body>
@@ -66,17 +73,14 @@
       <a class="back" href="./index.html"><span>&larr;</span> Interaction Experiments</a>
       <span class="label" id="label"></span>
     </div>
-
     <div class="head">
       <h1 class="title" id="title">Interaction</h1>
       <p class="caption" id="caption"></p>
     </div>
-
-    <div class="stage">
-      <div class="stage__loading" id="loading">loading live interaction…</div>
-      <iframe id="frame" title="" allow="fullscreen" loading="eager"></iframe>
+    <div class="stage" id="stage">
+      <div class="stage__loading" id="loading">loading interaction…</div>
+      <div class="scaler" id="scaler"><iframe id="frame" title="" allow="fullscreen"></iframe></div>
     </div>
-
     <div class="foot">
       <span id="srcnote"></span>
       <a id="openlive" href="#" target="_blank" rel="noopener">Open in a new tab &#8599;</a>
@@ -84,80 +88,165 @@
   </div>
 
   <script>
-    // The blank "player" page. Each interaction is fed in via ?study=<id>.
-    // Same-origin embeds (lobzyjay.github.io/*) can deep-link to a section via #hash.
+    // Each study loads its real deployed page, then we ISOLATE the interactive
+    // element so the experiment opens straight on the interaction — no loader,
+    // no hero, no chrome — while the element's own JS keeps the interaction live.
+    // Same-origin (lobzyjay.github.io) studies can be cropped/scrolled precisely;
+    // cross-origin ones fall back to a plain embed.
     var STUDIES = {
       "apex-footer": {
-        title: "Apex Footer",
-        label: "Self-built · recreation",
-        caption: "Blob tags <em>float in one-by-one</em> and un-strike on hover; an orchestrated scroll-in intro; a hand that tracks your cursor.",
-        src: "./apex-footer/",
-        srcnote: "self-built in this repo"
+        title: "Apex Footer", label: "Self-built · recreation",
+        caption: "Blob tags <em>float in one-by-one</em> and un-strike on hover; a hand that tracks your cursor.",
+        src: "./apex-footer/", srcnote: "self-built in this repo",
+        mode: "crop", find: { selector: ".footer" }, viewportW: 1280
       },
       "stsl-hero": {
-        title: "Hero Atmosphere",
-        label: "Systemspec · cursor-aware",
-        caption: "A braille dot-field on the homepage hero — <em>move your cursor over the surface</em> and the texture pushes away from the pointer.",
-        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/#sub-hero",
-        srcnote: "Systemspec design system · /design"
+        title: "Hero Atmosphere", label: "Systemspec · cursor-aware",
+        caption: "A braille dot-field — <em>move your cursor over it</em> and the texture pushes away from the pointer.",
+        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/", srcnote: "Systemspec design system",
+        mode: "crop", find: { within: ".group\\/stage", text: "HERO ATMOSPHERE" }, viewportW: 1440
       },
       "stsl-footer": {
-        title: "Footer Atmosphere",
-        label: "Systemspec · cursor-aware",
-        caption: "The reactive Loop 1 sweep inside the marketing footer — <em>same canvas physics as the hero</em>, warped onto the espresso surface.",
-        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/#sub-footer",
-        srcnote: "Systemspec design system · /design"
+        title: "Footer Atmosphere", label: "Systemspec · cursor-aware",
+        caption: "Same canvas physics as the hero, <em>warped onto the espresso footer surface</em>. Move your cursor over it.",
+        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/", srcnote: "Systemspec design system",
+        mode: "crop", find: { within: ".group\\/stage", text: "FOOTER ATMOSPHERE" }, viewportW: 1440
       },
       "stsl-speedometer": {
-        title: "Speedometer Scroll",
-        label: "STSL case study · scroll-linked",
-        caption: "The scroll-driven speedometer from the STSL case study. <em>Scroll inside the frame</em> to drive the needle.",
-        src: "https://www.artbyade.com/case-study/stsl/",
-        srcnote: "artbyade.com · STSL case study"
+        title: "Speedometer Scroll", label: "STSL case study · drag the scrubber",
+        caption: "<em>Drag the day-scrubber</em> — it drives the running-cost bars and the speedometer gauge. (Opens the live case study.)",
+        src: "https://www.artbyade.com/case-study/stsl/#ch-08-working-with-claude", srcnote: "artbyade.com · STSL case study",
+        mode: "embed"
       },
       "agmb-viz": {
-        title: "Building Trace Viz",
-        label: "AGMB · canvas + parallax",
-        caption: "A detailed <em>canvas line-trace</em> that draws itself over the building photo, parallaxing slower than the scroll.",
-        src: "https://lobzyjay.github.io/agmb-website/agmb-apply.html",
-        srcnote: "AGMB · apply page"
+        title: "Building Trace Viz", label: "AGMB · canvas + parallax",
+        caption: "A <em>canvas line-trace</em> drawing itself over the building, parallaxing slower than the scroll. Scroll the stage.",
+        src: "https://lobzyjay.github.io/agmb-website/agmb-apply.html", srcnote: "AGMB · apply page",
+        mode: "scroll", hide: ["nav", ".scroll-progress", "#mobile-nav"], scrollTo: 0, viewportW: 1280
       },
       "voltex-hero": {
-        title: "Hero Scene",
-        label: "Voltex · Three.js + Lenis",
-        caption: "A <em>WebGL canvas</em> behind the type, HUD overlays, and Lenis smooth scroll.",
-        src: "https://lobzyjay.github.io/Voltex/",
-        srcnote: "Voltex"
+        title: "Hero Scene", label: "Voltex · Three.js + Lenis",
+        caption: "A <em>WebGL hero scene</em> behind the type, with HUD overlays.",
+        src: "https://lobzyjay.github.io/Voltex/", srcnote: "Voltex",
+        mode: "crop", find: { selector: "#hero" }, viewportW: 1280, hide: ["[class*='loader']", "[id*='loader']"]
       },
       "pacific-turbine": {
-        title: "Wind Turbine",
-        label: "Pacific Blue · Three.js GLB",
-        caption: "A GLB turbine that <em>orbits with the scroll</em> while the section sticks below the header and crossfades phases.",
-        src: "https://lobzyjay.github.io/Pacific-blue/#gen-section",
-        srcnote: "Pacific Blue"
+        title: "Wind Turbine", label: "Pacific Blue · Three.js GLB",
+        caption: "A GLB turbine that <em>orbits with the scroll</em> while the section sticks and crossfades. Scroll the stage.",
+        src: "https://lobzyjay.github.io/Pacific-blue/", srcnote: "Pacific Blue",
+        mode: "scroll", hide: ["#site-header", "#loader-turbine", "header"], find: { selector: "#gen-section" }, viewportW: 1280
       }
     };
 
     var id = new URLSearchParams(location.search).get("study");
-    var s = STUDIES[id];
-    if (!s) { s = { title: "Not found", label: "—", caption: "Unknown study. <em>Back to the index.</em>", src: "", srcnote: "" }; }
+    var s = STUDIES[id] || { title: "Not found", label: "—",
+      caption: "Unknown study — <em>back to the index</em>.", src: "", srcnote: "", mode: "embed" };
+
+    var stage = document.getElementById("stage");
+    var scaler = document.getElementById("scaler");
+    var frame = document.getElementById("frame");
+    var loading = document.getElementById("loading");
+    var openlive = document.getElementById("openlive");
 
     document.title = s.title + " — Interaction Experiments";
     document.getElementById("title").textContent = s.title;
     document.getElementById("label").textContent = s.label;
     document.getElementById("caption").innerHTML = s.caption;
     document.getElementById("srcnote").textContent = s.srcnote;
-    var open = document.getElementById("openlive");
-    var frame = document.getElementById("frame");
-    var loading = document.getElementById("loading");
-    if (s.src) {
-      open.href = s.src;
-      frame.title = s.title;
-      frame.addEventListener("load", function () { loading.style.opacity = "0"; });
-      frame.src = s.src;
-    } else {
-      open.style.display = "none";
+    if (s.src) openlive.href = s.src; else openlive.style.display = "none";
+
+    function reveal() { stage.classList.add("ready"); }
+
+    function findEl(doc, find) {
+      if (!find) return null;
+      if (find.selector) return doc.querySelector(find.selector);
+      if (find.within && find.text) {
+        var cands = [].slice.call(doc.querySelectorAll(find.within));
+        var rx = new RegExp(find.text, "i");
+        cands = cands.filter(function (el) { return rx.test(el.textContent || ""); });
+        cands.sort(function (a, b) { return a.getBoundingClientRect().height - b.getBoundingClientRect().height; });
+        return cands[0] || null;
+      }
+      return null;
     }
+
+    function hideChrome(doc, hide) {
+      (hide || []).forEach(function (sel) {
+        try { [].slice.call(doc.querySelectorAll(sel)).forEach(function (el) { el.style.display = "none"; }); } catch (e) {}
+      });
+      // generic: kill full-viewport fixed overlays / loaders sitting on top
+      try {
+        var vw = doc.documentElement.clientWidth, vh = doc.documentElement.clientHeight;
+        [].slice.call(doc.querySelectorAll("body *")).forEach(function (el) {
+          var cs = el.ownerDocument.defaultView.getComputedStyle(el);
+          if (cs.position === "fixed") {
+            var r = el.getBoundingClientRect();
+            var z = parseInt(cs.zIndex, 10) || 0;
+            if (r.width >= vw * 0.9 && r.height >= vh * 0.9 && z >= 50) el.style.display = "none";
+          }
+        });
+      } catch (e) {}
+    }
+
+    function applyCrop() {
+      var win = frame.contentWindow, doc = frame.contentDocument;
+      hideChrome(doc, s.hide);
+      var el = findEl(doc, s.find);
+      if (!el) return false;
+      var r = el.getBoundingClientRect();
+      var left = r.left + win.scrollX, top = r.top + win.scrollY, w = r.width, h = r.height;
+      if (!w || !h) return false;
+      var k = stage.clientWidth / w;
+      stage.style.aspectRatio = w + " / " + h;
+      // size the iframe to the full page at the chosen desktop width, then translate the
+      // element to origin and scale the wrapper so the element fills the stage.
+      frame.style.width = s.viewportW + "px";
+      frame.style.height = Math.max(doc.documentElement.scrollHeight, top + h + 40) + "px";
+      frame.style.transform = "translate(" + (-left) + "px," + (-top) + "px)";
+      scaler.style.transform = "scale(" + k + ")";
+      return true;
+    }
+
+    function applyScroll() {
+      var win = frame.contentWindow, doc = frame.contentDocument;
+      stage.classList.add("is-scroll");
+      hideChrome(doc, s.hide);
+      var target = (typeof s.scrollTo === "number") ? s.scrollTo : null;
+      if (s.find) { var el = findEl(doc, s.find); if (el) target = el.getBoundingClientRect().top + win.scrollY; }
+      if (target != null) { try { win.scrollTo(0, target); } catch (e) {} }
+      return true;
+    }
+
+    function onLoad() {
+      var ok = false;
+      if (s.mode === "crop" || s.mode === "scroll") {
+        try {
+          // throws if cross-origin (e.g. local dev) — falls back to plain embed
+          var test = frame.contentDocument.title; void test;
+          ok = (s.mode === "crop") ? applyCrop() : applyScroll();
+        } catch (e) { ok = false; }
+      }
+      if (!ok && s.mode !== "embed") {
+        // fallback: plain scrollable embed
+        stage.classList.add("is-scroll");
+        frame.style.cssText = "";
+      }
+      reveal();
+    }
+
+    if (s.src) {
+      frame.title = s.title;
+      frame.addEventListener("load", onLoad);
+      // settle re-crop on resize (crop only)
+      var rt;
+      window.addEventListener("resize", function () {
+        if (s.mode !== "crop") return;
+        clearTimeout(rt); rt = setTimeout(function () { try { applyCrop(); } catch (e) {} }, 150);
+      });
+      // safety reveal if load never fires
+      setTimeout(reveal, 6000);
+      frame.src = s.src;
+    } else { reveal(); }
   </script>
 </body>
 </html>
