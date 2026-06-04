@@ -126,9 +126,9 @@
       },
       "pacific-turbine": {
         title: "Wind Turbine", label: "Pacific Blue · Three.js GLB",
-        caption: "A GLB turbine that <em>orbits with the scroll</em> while the section sticks and crossfades. Scroll the stage.",
-        src: "https://lobzyjay.github.io/Pacific-blue/", srcnote: "Pacific Blue",
-        mode: "scroll", hide: ["#site-header", "#loader-turbine", "header"], find: { selector: "#gen-section" }, viewportW: 1280
+        caption: "A real GLB turbine (Enercon E70) — <em>scroll the stage</em> to orbit the camera through the section.",
+        src: "./pacific-turbine/", srcnote: "Pacific Blue · section extracted",
+        mode: "scroll", find: { selector: "#gen-section" }, scrollFrac: 0.22, viewportW: 1280
       }
     };
 
@@ -256,10 +256,26 @@
     function applyScroll() {
       var win = frame.contentWindow, doc = frame.contentDocument;
       stage.classList.add("is-scroll");
+      // give the stage an explicit viewport-based height so the embedded iframe
+      // (and any vh-based content inside it) has real dimensions to render into
+      stage.style.minHeight = "0";
+      var stageTop = stage.getBoundingClientRect().top;
+      stage.style.height = Math.max(360, window.innerHeight - stageTop - 80) + "px";
+      // the iframe lives inside .scaler (auto height) — in scroll-mode make both
+      // fill the stage so the iframe (and its vh content) has a real height.
+      scaler.style.cssText = "position:absolute;inset:0;width:100%;height:100%;transform:none";
+      frame.style.cssText = "width:100%;height:100%;border:0;display:block;opacity:1;background:#000";
       hideChrome(doc, s.hide);
-      var target = (typeof s.scrollTo === "number") ? s.scrollTo : null;
-      if (s.find) { var el = findEl(doc, s.find); if (el) target = el.getBoundingClientRect().top + win.scrollY; }
-      if (target != null) { try { win.scrollTo(0, target); } catch (e) {} }
+      // re-measure the section now that the iframe has real height, then scroll in
+      function go() {
+        var target = (typeof s.scrollTo === "number") ? s.scrollTo : null;
+        if (s.find) {
+          var el = findEl(doc, s.find);
+          if (el) { var r = el.getBoundingClientRect(); target = r.top + win.scrollY; if (s.scrollFrac) target += r.height * s.scrollFrac; }
+        }
+        if (target != null) { try { win.scrollTo(0, target); } catch (e) {} }
+      }
+      go(); setTimeout(go, 400); setTimeout(go, 1200);   // re-settle as vh layout resolves
       return true;
     }
 
