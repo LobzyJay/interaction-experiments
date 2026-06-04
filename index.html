@@ -11,6 +11,7 @@
     --muted: #8d8d88;
     --faint: #5c5c58;
     --line: rgba(255,255,255,0.08);
+    --red: #e40202;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
     --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
@@ -60,7 +61,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     .study:hover { padding-left: 0.7rem; }
-    .study:hover .study__title { color: #fff; }
+    .study:hover .study__title { color: var(--red); }
     .study:hover .study__go { color: var(--ink); }
     .study:hover .study__go span { transform: translateX(4px); }
   }
@@ -84,7 +85,7 @@
   <div class="wrap">
     <header>
       <p class="eyebrow">Aloba Adewale · Front-end studies</p>
-      <h1>Interaction&nbsp;Experiments</h1>
+      <h1>Interaction Experiments</h1>
       <p class="lead">The interactions worth pulling out of my shipped work. Open any one to explore it <b>live</b>, on its own page — hover, scroll, and drag the real thing.</p>
     </header>
 

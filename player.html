@@ -38,7 +38,7 @@
 
   .head { margin-bottom: clamp(1rem, 2.2vw, 1.5rem); }
   .title { font-size: clamp(1.9rem, 5vw, 3.1rem); line-height: 1.0; letter-spacing: -0.03em;
-           font-weight: 660; color: var(--red); }      /* the one red element */
+           font-weight: 660; color: var(--ink); }       /* white; red is only the index hover state */
   .caption { color: var(--muted); font-size: clamp(0.95rem, 1.6vw, 1.05rem); max-width: 66ch; margin-top: 0.7rem; }
   .caption em { color: var(--ink); font-style: normal; font-weight: 600; }
 
@@ -123,7 +123,7 @@
         title: "Dithered Tile Viz", label: "AGMB design system · cursor-aware",
         caption: "Per-product silhouettes Bayer-dithered into dot fields — <em>move your cursor over a tile</em> to displace the dots (iron-filings repulsion).",
         src: "https://lobzyjay.github.io/agmb-design-system/", srcnote: "AGMB design system",
-        mode: "crop", find: { within: "section", text: "Dithered tile viz" }, viewportW: 1280
+        mode: "crop", find: { within: "section", text: "Dithered tile viz", canvasGrid: true }, viewportW: 1280
       },
       "voltex-hero": {
         title: "Hero Scene", label: "Voltex · Three.js + Lenis",
@@ -167,7 +167,20 @@
         var rx = new RegExp(find.text, "i");
         cands = cands.filter(function (el) { return rx.test(el.textContent || ""); });
         cands.sort(function (a, b) { return a.getBoundingClientRect().height - b.getBoundingClientRect().height; });
-        return cands[0] || null;
+        var base = cands[0] || null;
+        if (base && find.canvasGrid) {
+          // narrow to the grid of canvases (excludes the section's heading/caption)
+          var cv = [].slice.call(base.querySelectorAll("canvas"));
+          if (cv.length >= 2) {
+            var anc = []; for (var n = cv[0]; n; n = n.parentElement) anc.push(n);
+            for (var i = 1; i < cv.length; i++) {
+              var p = []; for (var m = cv[i]; m; m = m.parentElement) p.push(m);
+              anc = anc.filter(function (x) { return p.indexOf(x) >= 0; });
+            }
+            return anc[0] || base;
+          }
+        }
+        return base;
       }
       return null;
     }
@@ -223,22 +236,27 @@
       if (!w || !h) return false;
       // guarantee the iframe is at least tall enough to contain the cropped element
       if (top + h > parseInt(frame.style.height, 10)) frame.style.height = (top + h + 80) + "px";
-      // 3) fit the element inside the viewport — never upscale (no distortion),
-      //    scale down to fit available width AND height so it's fully visible, uncut.
+
+      // 3) UNIFORM PLAYER FRAME: the stage is a consistent box (fills the available
+      //    area, same for every study); the element is scaled to CONTAIN within it
+      //    — never upscaled — and centered, so nothing is cut and all studies share
+      //    one frame size. The stage background letterboxes around it.
       stage.style.aspectRatio = "auto";
       stage.style.minHeight = "0";
-      stage.style.width = ""; stage.style.height = "";   // reset before measuring space
-      var availW = (stage.parentElement ? stage.parentElement.clientWidth : stage.clientWidth);
-      var stageTop = stage.getBoundingClientRect().top;  // chrome above the stage
-      var availH = Math.max(260, window.innerHeight - stageTop - 80); // reserve the foot row
-      var k = Math.min(1, availW / w, availH / h);
-      stage.style.width = Math.round(w * k) + "px";
-      stage.style.height = Math.round(h * k) + "px";
-      stage.style.marginLeft = "auto";
-      stage.style.marginRight = "auto";
+      stage.style.height = "";                              // reset to read available space
+      var availW = stage.clientWidth;                       // = shell width (consistent)
+      var stageTop = stage.getBoundingClientRect().top;
+      var availH = Math.max(300, window.innerHeight - stageTop - 80);
+      stage.style.height = availH + "px";
+      var pad = 28;
+      var k = Math.min(1, (availW - pad * 2) / w, (availH - pad * 2) / h);
+      var sw = w * k, sh = h * k;
+      var offX = Math.round((availW - sw) / 2), offY = Math.round((availH - sh) / 2);
+      scaler.style.left = offX + "px";
+      scaler.style.top = offY + "px";
       frame.style.transform = "translate(" + (-left) + "px," + (-top) + "px)";
       scaler.style.transform = "scale(" + k + ")";
-      cropState = { left: left, top: top, k: k };   // for touch→cursor mapping
+      cropState = { left: left, top: top, k: k, offX: offX, offY: offY };   // touch mapping
       return true;
     }
 
@@ -266,6 +284,12 @@
         stage.classList.add("is-scroll");
         frame.style.cssText = "";
       }
+      // re-crop after layout / fonts / scroll-reveal settle (fixes races where the
+      // element measured short or mid-reveal on first paint)
+      if (ok && s.mode === "crop") {
+        setTimeout(function () { try { applyCrop(); } catch (e) {} }, 600);
+        setTimeout(function () { try { applyCrop(); } catch (e) {} }, 1500);
+      }
       reveal();
     }
 
@@ -276,8 +300,8 @@
       if (!cropState) return;
       try {
         var win = frame.contentWindow, doc = frame.contentDocument;
-        var cx = cropState.left + clientX / cropState.k;
-        var cy = cropState.top + clientY / cropState.k;
+        var cx = cropState.left + (clientX - (cropState.offX || 0)) / cropState.k;
+        var cy = cropState.top + (clientY - (cropState.offY || 0)) / cropState.k;
         var target = doc.elementFromPoint(cx, cy) || doc.body;
         ["pointermove", "mousemove"].forEach(function (type) {
           target.dispatchEvent(new win.MouseEvent(type, { clientX: cx, clientY: cy, bubbles: true }));
