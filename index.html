@@ -11,7 +11,6 @@
     --muted: #8d8d88;
     --faint: #5c5c58;
     --line: rgba(255,255,255,0.08);
-    --red: #e40202;            /* artbyade.com highlight red */
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
     --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
@@ -23,16 +22,14 @@
     padding: clamp(2rem, 6vw, 6rem) clamp(1.25rem, 5vw, 4rem) 5rem;
   }
   .wrap { max-width: 1000px; margin: 0 auto; }
-  ::selection { background: var(--red); color: #fff; }
 
   header { margin-bottom: clamp(2.5rem, 6vw, 4.5rem); }
   .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em;
-             text-transform: uppercase; color: var(--red); margin-bottom: 1.1rem; }
+             text-transform: uppercase; color: var(--faint); margin-bottom: 1.1rem; }
   h1 { font-size: clamp(2.4rem, 7vw, 4.5rem); line-height: 0.98; letter-spacing: -0.03em;
        font-weight: 680; margin-bottom: 1.2rem; }
   .lead { color: var(--muted); font-size: clamp(1rem, 2vw, 1.12rem); max-width: 62ch; }
   .lead b { color: var(--ink); font-weight: 600; }
-  .lead .hl { color: var(--red); font-weight: 600; }
 
   .count { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
            text-transform: uppercase; color: var(--muted);
@@ -46,34 +43,32 @@
     text-decoration: none; color: inherit;
     transition: padding-left 360ms var(--ease);
   }
-  .study__no { font-family: var(--mono); font-size: 0.82rem; color: var(--red);
-               padding-top: 0.4rem; transition: opacity 200ms ease; }
+  .study__no { font-family: var(--mono); font-size: 0.82rem; color: var(--faint); padding-top: 0.4rem; }
   .study__body { min-width: 0; }
   .study__title { font-size: clamp(1.35rem, 3vw, 2rem); letter-spacing: -0.02em; font-weight: 600;
                   transition: color 200ms ease; }
   .study__src { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em;
                 color: var(--faint); text-transform: uppercase; margin-top: 0.3rem; }
   .study__desc { color: var(--muted); font-size: 0.95rem; margin-top: 0.7rem; max-width: 64ch; }
-  .study__desc .hl { color: var(--red); }
   .study__tags { margin-top: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tag { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--muted);
          border: 1px solid var(--line); border-radius: 999px; padding: 0.3em 0.75em; }
   .study__go { font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
                display: inline-flex; align-items: center; gap: 0.4rem; white-space: nowrap;
                padding-top: 0.5rem; transition: color 200ms ease; }
-  .study__go span { color: var(--red); transition: transform 360ms var(--ease); display: inline-block; }
+  .study__go span { transition: transform 360ms var(--ease); display: inline-block; }
 
   @media (hover: hover) and (pointer: fine) {
     .study:hover { padding-left: 0.7rem; }
-    .study:hover .study__title { color: var(--red); }
+    .study:hover .study__title { color: #fff; }
     .study:hover .study__go { color: var(--ink); }
-    .study:hover .study__go span { transform: translate(3px,-3px); }
+    .study:hover .study__go span { transform: translateX(4px); }
   }
-  .study:focus-visible { outline: 2px solid var(--red); outline-offset: 5px; border-radius: 8px; }
+  .study:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; border-radius: 8px; }
 
-  footer { margin-top: clamp(3rem, 7vw, 5rem); color: var(--muted); font-family: var(--mono);
+  footer { margin-top: clamp(3rem, 7vw, 5rem); color: var(--faint); font-family: var(--mono);
            font-size: 0.72rem; letter-spacing: 0.06em; }
-  footer a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--red); }
+  footer a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
 
   @media (max-width: 640px) {
     .study { grid-template-columns: auto 1fr; }
@@ -90,86 +85,98 @@
     <header>
       <p class="eyebrow">Aloba Adewale · Front-end studies</p>
       <h1>Interaction&nbsp;Experiments</h1>
-      <p class="lead">The interactions worth pulling out of my shipped work. Each one opens <b>live</b> — hover, scroll, and drag the real thing. <span class="hl">Red</span> marks what to look for.</p>
+      <p class="lead">The interactions worth pulling out of my shipped work. Open any one to explore it <b>live</b>, on its own page — hover, scroll, and drag the real thing.</p>
     </header>
 
-    <p class="count">06 studies</p>
+    <p class="count">07 studies</p>
     <ul>
       <li>
-        <a class="study" href="./apex-footer/" target="_blank" rel="noopener">
+        <a class="study" href="./player.html?study=apex-footer">
           <span class="study__no">01</span>
           <span class="study__body">
             <span class="study__title">Apex Footer</span>
-            <span class="study__src">self-built · /apex-footer</span>
-            <span class="study__desc">Blob tags that <span class="hl">float in one-by-one and un-strike on hover</span>, an orchestrated scroll-in intro, and a hand that tracks the cursor.</span>
-            <span class="study__tags"><span class="tag">staggered reveal</span><span class="tag">hover micro-interaction</span><span class="tag">cursor tracking</span><span class="tag">CSS masks</span></span>
+            <span class="study__src">self-built · recreation</span>
+            <span class="study__desc">Blob tags float in one-by-one and un-strike on hover, an orchestrated scroll-in intro, and a hand that tracks the cursor.</span>
+            <span class="study__tags"><span class="tag">staggered reveal</span><span class="tag">hover micro-interaction</span><span class="tag">cursor tracking</span></span>
           </span>
-          <span class="study__go">View live <span>&#8599;</span></span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
         </a>
       </li>
       <li>
-        <a class="study" href="https://lobzyjay.github.io/Systemspec-website-redesign/" target="_blank" rel="noopener">
+        <a class="study" href="./player.html?study=stsl-hero">
           <span class="study__no">02</span>
           <span class="study__body">
-            <span class="study__title">Systemspec — Reactive Atmosphere</span>
-            <span class="study__src">live · Systemspec-website-redesign</span>
-            <span class="study__desc">A canvas Braille dot-field with a <span class="hl">cursor forcefield</span> — dots push away from the pointer and spring back. Same engine on the parchment hero and the espresso footer.</span>
-            <span class="study__tags"><span class="tag">canvas physics</span><span class="tag">forcefield</span><span class="tag">spring + damping</span><span class="tag">reactive footer</span></span>
+            <span class="study__title">STSL — Hero Atmosphere</span>
+            <span class="study__src">live · Systemspec /design</span>
+            <span class="study__desc">A canvas Braille dot-field on the homepage hero — the texture pushes away from the cursor and springs back.</span>
+            <span class="study__tags"><span class="tag">canvas physics</span><span class="tag">forcefield</span><span class="tag">cursor-aware</span></span>
           </span>
-          <span class="study__go">View live <span>&#8599;</span></span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
         </a>
       </li>
       <li>
-        <a class="study" href="https://lobzyjay.github.io/agmb-website/" target="_blank" rel="noopener">
+        <a class="study" href="./player.html?study=stsl-footer">
           <span class="study__no">03</span>
           <span class="study__body">
-            <span class="study__title">AGMB — Scroll Reveals</span>
-            <span class="study__src">live · agmb-website</span>
-            <span class="study__desc">GSAP ScrollTrigger driving <span class="hl">line-by-line heading entrances</span> and section reveals — the cascade replays as you scroll back up.</span>
-            <span class="study__tags"><span class="tag">GSAP ScrollTrigger</span><span class="tag">line cascade</span><span class="tag">scroll reveal</span><span class="tag">bidirectional</span></span>
+            <span class="study__title">STSL — Footer Atmosphere</span>
+            <span class="study__src">live · Systemspec /design</span>
+            <span class="study__desc">The reactive Loop 1 sweep inside the marketing footer — same canvas physics as the hero, warped onto the espresso surface.</span>
+            <span class="study__tags"><span class="tag">canvas physics</span><span class="tag">diagonal sweep</span><span class="tag">dark surface</span></span>
           </span>
-          <span class="study__go">View live <span>&#8599;</span></span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
         </a>
       </li>
       <li>
-        <a class="study" href="https://lobzyjay.github.io/agmb-website/agmb-apply.html" target="_blank" rel="noopener">
+        <a class="study" href="./player.html?study=stsl-speedometer">
           <span class="study__no">04</span>
+          <span class="study__body">
+            <span class="study__title">STSL — Speedometer Scroll</span>
+            <span class="study__src">live · artbyade case study</span>
+            <span class="study__desc">A scroll-driven speedometer from the STSL case study — the needle is mapped to scroll progress.</span>
+            <span class="study__tags"><span class="tag">scroll-linked</span><span class="tag">gauge</span><span class="tag">case study</span></span>
+          </span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
+        </a>
+      </li>
+      <li>
+        <a class="study" href="./player.html?study=agmb-viz">
+          <span class="study__no">05</span>
           <span class="study__body">
             <span class="study__title">AGMB — Building Trace Viz</span>
             <span class="study__src">live · agmb-website/agmb-apply</span>
-            <span class="study__desc">A <span class="hl">canvas line-trace</span> that draws itself over the building photo, with the canvas parallaxing slower than the scroll.</span>
+            <span class="study__desc">A detailed canvas line-trace that draws itself over the building photo, parallaxing slower than the scroll.</span>
             <span class="study__tags"><span class="tag">canvas trace</span><span class="tag">parallax</span><span class="tag">scroll-linked</span></span>
           </span>
-          <span class="study__go">View live <span>&#8599;</span></span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
         </a>
       </li>
       <li>
-        <a class="study" href="https://lobzyjay.github.io/Voltex/" target="_blank" rel="noopener">
-          <span class="study__no">05</span>
+        <a class="study" href="./player.html?study=voltex-hero">
+          <span class="study__no">06</span>
           <span class="study__body">
             <span class="study__title">Voltex — Hero</span>
             <span class="study__src">live · Voltex</span>
-            <span class="study__desc">A Three.js industrial hero with a <span class="hl">WebGL canvas</span> behind the type, HUD overlays, and Lenis smooth scroll.</span>
-            <span class="study__tags"><span class="tag">Three.js</span><span class="tag">WebGL hero</span><span class="tag">Lenis scroll</span><span class="tag">HUD</span></span>
+            <span class="study__desc">A Three.js industrial hero with a WebGL canvas behind the type, HUD overlays, and Lenis smooth scroll.</span>
+            <span class="study__tags"><span class="tag">Three.js</span><span class="tag">WebGL hero</span><span class="tag">Lenis scroll</span></span>
           </span>
-          <span class="study__go">View live <span>&#8599;</span></span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
         </a>
       </li>
       <li>
-        <a class="study" href="https://lobzyjay.github.io/Pacific-blue/#gen-section" target="_blank" rel="noopener">
-          <span class="study__no">06</span>
+        <a class="study" href="./player.html?study=pacific-turbine">
+          <span class="study__no">07</span>
           <span class="study__body">
             <span class="study__title">Pacific Blue — Wind Turbine</span>
             <span class="study__src">live · Pacific-blue</span>
-            <span class="study__desc">A Three.js GLB turbine (Enercon E70) that <span class="hl">orbits with the scroll</span> while the section sticks below the header and crossfades through content phases.</span>
-            <span class="study__tags"><span class="tag">Three.js GLB</span><span class="tag">scroll orbit</span><span class="tag">sticky phases</span><span class="tag">Lenis</span></span>
+            <span class="study__desc">A Three.js GLB turbine that orbits with the scroll while the section sticks below the header and crossfades through phases.</span>
+            <span class="study__tags"><span class="tag">Three.js GLB</span><span class="tag">scroll orbit</span><span class="tag">sticky phases</span></span>
           </span>
-          <span class="study__go">View live <span>&#8599;</span></span>
+          <span class="study__go">Explore <span>&#8594;</span></span>
         </a>
       </li>
     </ul>
 
-    <footer>Each study opens its live GitHub Pages deploy · highlight red sampled from <a href="https://artbyade.com" target="_blank" rel="noopener">artbyade.com</a></footer>
+    <footer>Each study opens in its own player · self-built and live-embedded sources</footer>
   </div>
 </body>
 </html>

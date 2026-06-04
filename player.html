@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Interaction — Interaction Experiments</title>
+<style>
+  :root {
+    --bg: #0c0c0d;
+    --stage: #0f0f10;
+    --ink: #f2f1ec;
+    --muted: #8d8d88;
+    --faint: #5c5c58;
+    --line: rgba(255,255,255,0.09);
+    --red: #e40202;            /* the ONLY red — the interaction title */
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; line-height: 1.5;
+    min-height: 100dvh; display: flex; flex-direction: column;
+    padding: clamp(1.25rem, 3.5vw, 2.5rem) clamp(1.25rem, 5vw, 3.5rem) clamp(1.5rem, 4vw, 3rem);
+  }
+  .shell { width: 100%; max-width: 1240px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            margin-bottom: clamp(1.4rem, 3vw, 2.2rem); }
+  .back { font-family: var(--mono); font-size: 0.76rem; letter-spacing: 0.04em; color: var(--muted);
+          text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+          transition: color 180ms ease; }
+  .back span { display: inline-block; transition: transform 300ms var(--ease); }
+  .back:hover { color: var(--ink); }
+  .back:hover span { transform: translateX(-3px); }
+  .label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+           color: var(--faint); text-align: right; }
+
+  .head { margin-bottom: clamp(1.1rem, 2.5vw, 1.6rem); }
+  .title { font-size: clamp(1.9rem, 5vw, 3.1rem); line-height: 1.0; letter-spacing: -0.03em;
+           font-weight: 660; color: var(--red); }      /* the one red element */
+  .caption { color: var(--muted); font-size: clamp(0.95rem, 1.6vw, 1.05rem); max-width: 64ch;
+             margin-top: 0.7rem; }
+  .caption em { color: var(--ink); font-style: normal; font-weight: 600; }
+
+  .stage { position: relative; flex: 1; min-height: 60vh; margin-top: clamp(1.2rem, 3vw, 2rem);
+           background: var(--stage); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .stage iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+  .stage__loading { position: absolute; inset: 0; display: grid; place-items: center;
+                    font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.14em;
+                    text-transform: uppercase; color: var(--faint);
+                    pointer-events: none; transition: opacity 400ms ease; }
+
+  .foot { margin-top: 1rem; display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;
+          font-family: var(--mono); font-size: 0.72rem; color: var(--faint); letter-spacing: 0.04em; }
+  .foot a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+  .foot a:hover { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) { .back span { transition: none; } }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="topbar">
+      <a class="back" href="./index.html"><span>&larr;</span> Interaction Experiments</a>
+      <span class="label" id="label"></span>
+    </div>
+
+    <div class="head">
+      <h1 class="title" id="title">Interaction</h1>
+      <p class="caption" id="caption"></p>
+    </div>
+
+    <div class="stage">
+      <div class="stage__loading" id="loading">loading live interaction…</div>
+      <iframe id="frame" title="" allow="fullscreen" loading="eager"></iframe>
+    </div>
+
+    <div class="foot">
+      <span id="srcnote"></span>
+      <a id="openlive" href="#" target="_blank" rel="noopener">Open in a new tab &#8599;</a>
+    </div>
+  </div>
+
+  <script>
+    // The blank "player" page. Each interaction is fed in via ?study=<id>.
+    // Same-origin embeds (lobzyjay.github.io/*) can deep-link to a section via #hash.
+    var STUDIES = {
+      "apex-footer": {
+        title: "Apex Footer",
+        label: "Self-built · recreation",
+        caption: "Blob tags <em>float in one-by-one</em> and un-strike on hover; an orchestrated scroll-in intro; a hand that tracks your cursor.",
+        src: "./apex-footer/",
+        srcnote: "self-built in this repo"
+      },
+      "stsl-hero": {
+        title: "Hero Atmosphere",
+        label: "Systemspec · cursor-aware",
+        caption: "A braille dot-field on the homepage hero — <em>move your cursor over the surface</em> and the texture pushes away from the pointer.",
+        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/#sub-hero",
+        srcnote: "Systemspec design system · /design"
+      },
+      "stsl-footer": {
+        title: "Footer Atmosphere",
+        label: "Systemspec · cursor-aware",
+        caption: "The reactive Loop 1 sweep inside the marketing footer — <em>same canvas physics as the hero</em>, warped onto the espresso surface.",
+        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/#sub-footer",
+        srcnote: "Systemspec design system · /design"
+      },
+      "stsl-speedometer": {
+        title: "Speedometer Scroll",
+        label: "STSL case study · scroll-linked",
+        caption: "The scroll-driven speedometer from the STSL case study. <em>Scroll inside the frame</em> to drive the needle.",
+        src: "https://www.artbyade.com/case-study/stsl/",
+        srcnote: "artbyade.com · STSL case study"
+      },
+      "agmb-viz": {
+        title: "Building Trace Viz",
+        label: "AGMB · canvas + parallax",
+        caption: "A detailed <em>canvas line-trace</em> that draws itself over the building photo, parallaxing slower than the scroll.",
+        src: "https://lobzyjay.github.io/agmb-website/agmb-apply.html",
+        srcnote: "AGMB · apply page"
+      },
+      "voltex-hero": {
+        title: "Hero Scene",
+        label: "Voltex · Three.js + Lenis",
+        caption: "A <em>WebGL canvas</em> behind the type, HUD overlays, and Lenis smooth scroll.",
+        src: "https://lobzyjay.github.io/Voltex/",
+        srcnote: "Voltex"
+      },
+      "pacific-turbine": {
+        title: "Wind Turbine",
+        label: "Pacific Blue · Three.js GLB",
+        caption: "A GLB turbine that <em>orbits with the scroll</em> while the section sticks below the header and crossfades phases.",
+        src: "https://lobzyjay.github.io/Pacific-blue/#gen-section",
+        srcnote: "Pacific Blue"
+      }
+    };
+
+    var id = new URLSearchParams(location.search).get("study");
+    var s = STUDIES[id];
+    if (!s) { s = { title: "Not found", label: "—", caption: "Unknown study. <em>Back to the index.</em>", src: "", srcnote: "" }; }
+
+    document.title = s.title + " — Interaction Experiments";
+    document.getElementById("title").textContent = s.title;
+    document.getElementById("label").textContent = s.label;
+    document.getElementById("caption").innerHTML = s.caption;
+    document.getElementById("srcnote").textContent = s.srcnote;
+    var open = document.getElementById("openlive");
+    var frame = document.getElementById("frame");
+    var loading = document.getElementById("loading");
+    if (s.src) {
+      open.href = s.src;
+      frame.title = s.title;
+      frame.addEventListener("load", function () { loading.style.opacity = "0"; });
+      frame.src = s.src;
+    } else {
+      open.style.display = "none";
+    }
+  </script>
+</body>
+</html>
