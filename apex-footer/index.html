@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apex — Footer</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Phudu:wght@600;700&family=Inter:wght@400;500&family=Manrope:wght@700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --frame:   #181818;
+    --panel:   #202020;
+    --white:   #ffffff;
+    --muted:   #8f8f8f;
+    --line:    rgba(255,255,255,0.10);
+    --eo:      cubic-bezier(0.23, 1, 0.32, 1);   /* strong ease-out (Emil) */
+    --eo-float:cubic-bezier(0.34, 1.45, 0.5, 1); /* single-overshoot settle — buoyant "float" */
+    --inter:   "Inter", ui-sans-serif, system-ui, sans-serif;
+    --display: "Phudu", "Inter", ui-sans-serif, sans-serif;
+    --label:   "Manrope", "Inter", sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    background: var(--frame);
+    font-family: var(--inter);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: var(--white);
+  }
+
+  .page-spacer {
+    flex: 1 0 auto;
+    min-height: 55vh;
+    display: grid;
+    place-items: center;
+    color: #3a3a3a;
+    font: 500 0.72rem/1 var(--inter);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  /* ---- frame + panel ---------------------------------------------- */
+  .footer {
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    background: var(--frame);
+    padding: 8px;
+  }
+  .panel {
+    position: relative;
+    overflow: hidden;
+    background: var(--panel);
+    padding: 50px 22px 200px;
+    border-radius: 4px;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 39px; }
+
+  /* ---- reveal primitives ------------------------------------------ */
+  /* generic fade-up */
+  .r { opacity: 0; transform: translateY(18px);
+       transition: opacity .62s var(--eo) var(--d,0ms), transform .62s var(--eo) var(--d,0ms); }
+  .is-in .r { opacity: 1; transform: none; }
+
+  /* line-mask reveal (heading) */
+  .line { display: block; overflow: hidden; }
+  .line > span { display: block; transform: translateY(115%);
+                 transition: transform .8s var(--eo) var(--d,0ms); }
+  .is-in .line > span { transform: none; }
+
+  /* divider scale-in */
+  .r-line { transform: scaleX(0); transform-origin: left;
+            transition: transform .7s var(--eo) var(--d,0ms); }
+  .is-in .r-line { transform: scaleX(1); }
+
+  /* logo spin-in */
+  .r-logo { opacity: 0; transform: rotate(-120deg) scale(.4);
+            transition: opacity .5s var(--eo) var(--d,0ms), transform .7s var(--eo) var(--d,0ms); }
+  .is-in .r-logo { opacity: 1; transform: none; }
+
+  /* hand pop-in (wrapper handles intro; inner img handles mouse tilt) */
+  .hand-wrap { opacity: 0; transform: translateY(22px) scale(.7);
+               transition: opacity .55s var(--eo) var(--d,0ms), transform .7s var(--eo) var(--d,0ms); }
+  .is-in .hand-wrap { opacity: 1; transform: none; }
+
+  /* ---- headline + hand -------------------------------------------- */
+  .headline { display: flex; align-items: flex-start; gap: 4px; width: 100%; }
+  .headline h2 {
+    flex: 1 1 0; min-width: 0;
+    font-family: var(--display); font-weight: 600;
+    font-size: 32px; line-height: 1.06; letter-spacing: -0.01em;
+    text-transform: uppercase; color: var(--white);
+  }
+  .hand-wrap { flex: none; width: 56px; height: 73px; }
+  .hand { display: block; width: 100%; height: 100%; object-fit: contain;
+          transform: rotate(3.57deg); transform-origin: 50% 80%; will-change: transform; }
+
+  .divider { width: 100%; height: 1px; background: var(--line); }
+
+  /* ---- meta -------------------------------------------------------- */
+  .meta { display: flex; flex-direction: column; gap: 40px; }
+  .left { display: flex; flex-direction: column; gap: 28px; }
+  .brand { display: flex; align-items: center; gap: 8px; }
+  .brand img { width: 34px; height: 34px; display: block; }
+  .brand__name { font-family: var(--inter); font-weight: 400; font-size: 24px; line-height: 24px; color: var(--white); }
+  .brand__name sup { font-size: 0.5em; color: var(--muted); vertical-align: super; }
+  .tagline { font-family: var(--inter); font-weight: 500; font-size: 16px; line-height: 20px; letter-spacing: -0.006em; color: var(--muted); }
+
+  .links { display: flex; flex-wrap: wrap; gap: 32px 56px; }
+  .col { display: flex; flex-direction: column; gap: 20px; }
+  .col__head { font-family: var(--label); font-weight: 700; font-size: 16px; color: var(--white); }
+  .col a { font-family: var(--inter); font-weight: 400; font-size: 16px; color: var(--muted);
+           text-decoration: none; width: fit-content; transition: color 160ms ease; }
+  @media (hover: hover) and (pointer: fine) { .col a:hover { color: var(--white); } }
+
+  /* ---- blob cluster ------------------------------------------------ */
+  .blobs { position: absolute; left: 0; right: 0; bottom: -6px; height: 200px; pointer-events: none; }
+  .blobs--desktop { display: none; }
+
+  .blob {
+    position: absolute; display: grid; place-items: center;
+    rotate: var(--rot, 0deg);
+    pointer-events: auto; cursor: pointer; text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    opacity: 0; transform: translateY(26px) scale(0.92);
+    transition: opacity 520ms var(--eo), transform 520ms var(--eo-float);
+    transition-delay: calc(var(--base, 0ms) + var(--i) * var(--stag, 90ms));
+  }
+  .is-in .blob { opacity: 1; transform: translateY(0) scale(1); }
+
+  .blob__shape { position: absolute; inset: 0; background: var(--fill);
+                 -webkit-mask: var(--mask) center / 100% 100% no-repeat;
+                         mask: var(--mask) center / 100% 100% no-repeat; }
+
+  .blob__label {
+    position: relative; z-index: 1;
+    font-family: var(--inter); font-weight: 400; font-size: 11px; line-height: 1;
+    letter-spacing: 0.01em; text-transform: uppercase;
+    color: var(--ink, #161614); white-space: nowrap; pointer-events: none;
+  }
+  .blob__label::after {
+    content: ""; position: absolute; left: -1px; right: -1px; top: 52%;
+    height: 1.4px; background: currentColor; transform: translateY(-50%);
+    clip-path: inset(0 0 0 0); transition: clip-path 260ms var(--eo);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .blob:hover { animation: jiggle 420ms var(--eo); }
+    .blob:hover .blob__label::after { clip-path: inset(0 0 0 100%); }  /* wipe off left→right (reading direction) */
+  }
+  .blob:active { transform: scale(0.96); }
+  .blob:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 6px; }
+
+  @keyframes jiggle {
+    0%   { rotate: var(--rot, 0deg); }
+    25%  { rotate: calc(var(--rot, 0deg) - 4deg); }
+    50%  { rotate: calc(var(--rot, 0deg) + 3deg); }
+    72%  { rotate: calc(var(--rot, 0deg) - 1.5deg); }
+    100% { rotate: var(--rot, 0deg); }
+  }
+
+  /* ================= DESKTOP ======================================= */
+  @media (min-width: 769px) {
+    .footer { padding: 14px; }
+    .panel { padding: 90px 74px 360px; }
+    .stack { gap: 50px; }
+    .headline h2 { font-size: clamp(34px, 3.5vw, 50px); line-height: 1.04; }
+    .headline h2 .line > span { white-space: nowrap; }
+    .hand-wrap { width: 77px; height: 99px; }
+    .hand { transform: rotate(3.57deg); }
+
+    .meta { flex-direction: row; align-items: flex-start; justify-content: space-between; }
+    .left { flex: none; }
+    .links { flex-wrap: nowrap; gap: clamp(40px, 7vw, 130px); align-items: flex-start; }
+
+    .blobs--mobile { display: none; }
+    .blobs--desktop { display: block; bottom: -10px; height: 340px; }
+    .blob__label { font-size: 16px; }
+    .blob__label::after { height: 1.8px; }
+  }
+
+  /* ---- reduced motion --------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .r, .line > span, .r-logo, .hand-wrap { transition: opacity .4s ease var(--d,0ms); transform: none; }
+    .is-in .r, .is-in .r-logo, .is-in .hand-wrap { transform: none; }
+    .line > span { transform: none; }
+    .r-line { transition: opacity .4s ease var(--d,0ms); transform: none; opacity: 0; }
+    .is-in .r-line { opacity: 1; transform: none; }
+    .blob { transform: none; transition: opacity 320ms ease; transition-delay: calc(var(--i) * 40ms); }
+    .is-in .blob { transform: none; }
+    @media (hover: hover) and (pointer: fine) {
+      .blob:hover { animation: none; }
+      .blob:hover .blob__label::after { transition: none; }   /* instant un-strike, no motion */
+    }
+    .blob:active { transform: none; }
+    .hand { transform: rotate(3.57deg) !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="page-spacer">scroll</div>
+
+  <footer class="footer">
+    <div class="panel" id="panel">
+      <div class="stack">
+
+        <div class="headline">
+          <h2>
+            <span class="line"><span class="r-txt" style="--d:80ms">Thank you for your curiosity.</span></span>
+            <span class="line"><span class="r-txt" style="--d:170ms">Let&rsquo;s build something cool.</span></span>
+          </h2>
+          <div class="hand-wrap" style="--d:280ms">
+            <img class="hand" id="hand" src="assets/hand.svg" alt="" aria-hidden="true" />
+          </div>
+        </div>
+
+        <div class="divider r-line" style="--d:360ms"></div>
+
+        <div class="meta">
+          <div class="left">
+            <div class="brand">
+              <img class="r-logo" style="--d:400ms" src="assets/apex.svg" alt="" aria-hidden="true" />
+              <span class="brand__name r" style="--d:460ms">Apex<sup>&trade;</sup></span>
+            </div>
+            <p class="tagline r" style="--d:520ms">Smarter tools for modern finance teams.<br />All rights reserved.</p>
+          </div>
+
+          <nav class="links" aria-label="Footer">
+            <div class="col r" style="--d:560ms">
+              <p class="col__head">Quick Links</p>
+              <a href="#">Home</a><a href="#">About</a><a href="#">Services</a><a href="#">Contact</a>
+            </div>
+            <div class="col r" style="--d:620ms">
+              <p class="col__head">Products</p>
+              <a href="#">Ai Assistant</a><a href="#">Mobile App</a><a href="#">Account</a><a href="#">Credit Card</a>
+            </div>
+            <div class="col r" style="--d:680ms">
+              <p class="col__head">Company</p>
+              <a href="#">About</a><a href="#">Privacy Policy</a><a href="#">Support</a><a href="#">Terms of Service</a>
+            </div>
+          </nav>
+        </div>
+
+        <div class="divider r-line" style="--d:740ms"></div>
+      </div>
+
+      <!-- MOBILE blob cluster (5) -->
+      <div class="blobs blobs--mobile" aria-label="Services" style="--base:820ms; --stag:90ms;">
+        <a class="blob" href="#" style="--i:0; --fill:#FCCEF0; --ink:#161614; --mask:url(assets/blobA.svg); --rot:-22.07deg; width:127.7px; height:54.6px; left:266px; top:96px;"><span class="blob__shape"></span><span class="blob__label">Website Dev</span></a>
+        <a class="blob" href="#" style="--i:1; --fill:#659DF5; --ink:#161614; --mask:url(assets/blobB.svg); --rot:26.86deg; width:127.7px; height:54.6px; left:188px; top:42px;"><span class="blob__shape"></span><span class="blob__label">Sales</span></a>
+        <a class="blob" href="#" style="--i:2; --fill:#ED5D3A; --ink:#ffffff; --mask:url(assets/blobC.svg); --rot:9.95deg; width:124.8px; height:52px; left:150px; top:86px;"><span class="blob__shape"></span><span class="blob__label">Branding</span></a>
+        <a class="blob" href="#" style="--i:3; --fill:#F4FF77; --ink:#161614; --mask:url(assets/blobA.svg); --rot:-3deg; width:127.7px; height:54.6px; left:60px; top:34px;"><span class="blob__shape"></span><span class="blob__label">Strategy</span></a>
+        <a class="blob" href="#" style="--i:4; --fill:#37B669; --ink:#ffffff; --mask:url(assets/blobD.svg); --rot:-12.66deg; width:148.5px; height:61.8px; left:8px; top:78px;"><span class="blob__shape"></span><span class="blob__label">Marketing</span></a>
+      </div>
+
+      <!-- DESKTOP blob cluster (13) -->
+      <div class="blobs blobs--desktop" aria-label="Services" style="--base:820ms; --stag:60ms;">
+        <a class="blob" href="#" style="--i:0;  --fill:#37B669; --ink:#fff;     --mask:url(assets/blobD.svg); --rot:-12.66deg; width:228px; height:95px; left:max(12px, calc(6% - 114px));  top:150px;"><span class="blob__shape"></span><span class="blob__label">Marketing</span></a>
+        <a class="blob" href="#" style="--i:1;  --fill:#F4FF77; --ink:#161614; --mask:url(assets/blobA.svg); --rot:-2deg;    width:199px; height:85px; left:max(40px, calc(12% - 99px));  top:70px;"><span class="blob__shape"></span><span class="blob__label">Strategy</span></a>
+        <a class="blob" href="#" style="--i:2;  --fill:#ED5D3A; --ink:#fff;     --mask:url(assets/blobC.svg); --rot:9.95deg;   width:193px; height:80px; left:calc(20% - 96px);  top:165px;"><span class="blob__shape"></span><span class="blob__label">Branding</span></a>
+        <a class="blob" href="#" style="--i:3;  --fill:#659DF5; --ink:#161614; --mask:url(assets/blobA.svg); --rot:26.86deg;  width:199px; height:85px; left:calc(27% - 99px);  top:58px;"><span class="blob__shape"></span><span class="blob__label">Sales</span></a>
+        <a class="blob" href="#" style="--i:4;  --fill:#FCCEF0; --ink:#161614; --mask:url(assets/blobA.svg); --rot:-22.07deg; width:199px; height:85px; left:calc(33% - 99px);  top:150px;"><span class="blob__shape"></span><span class="blob__label">Website Dev</span></a>
+        <a class="blob" href="#" style="--i:5;  --fill:#FBF8E9; --ink:#161614; --mask:url(assets/blobA.svg); --rot:13.23deg;  width:199px; height:85px; left:calc(45% - 99px);  top:188px;"><span class="blob__shape"></span><span class="blob__label">Framer Dev</span></a>
+        <a class="blob" href="#" style="--i:6;  --fill:#6AEA9C; --ink:#161614; --mask:url(assets/blobA.svg); --rot:-19.31deg; width:199px; height:85px; left:calc(51% - 99px);  top:104px;"><span class="blob__shape"></span><span class="blob__label">Webflow</span></a>
+        <a class="blob" href="#" style="--i:7;  --fill:#ED5D3A; --ink:#fff;     --mask:url(assets/blobC.svg); --rot:-16.7deg;  width:193px; height:80px; left:calc(59% - 96px);  top:178px;"><span class="blob__shape"></span><span class="blob__label">Newsletter</span></a>
+        <a class="blob" href="#" style="--i:8;  --fill:#659DF5; --ink:#fff;     --mask:url(assets/blobC.svg); --rot:9.95deg;   width:193px; height:80px; left:calc(65% - 96px);  top:72px;"><span class="blob__shape"></span><span class="blob__label">UIUX Design</span></a>
+        <a class="blob" href="#" style="--i:9;  --fill:#F4FF77; --ink:#161614; --mask:url(assets/blobA.svg); --rot:-45.63deg; width:199px; height:85px; left:calc(72% - 99px);  top:182px;"><span class="blob__shape"></span><span class="blob__label">Portfolio</span></a>
+        <a class="blob" href="#" style="--i:10; --fill:#FBF8E9; --ink:#161614; --mask:url(assets/blobD.svg); --rot:13.73deg;  width:228px; height:95px; left:calc(80% - 114px); top:172px;"><span class="blob__shape"></span><span class="blob__label">AI Designs</span></a>
+        <a class="blob" href="#" style="--i:11; --fill:#FE99B6; --ink:#161614; --mask:url(assets/blobA.svg); --rot:26.86deg;  width:199px; height:85px; left:calc(86% - 99px);  top:58px;"><span class="blob__shape"></span><span class="blob__label">Illustration</span></a>
+        <a class="blob" href="#" style="--i:12; --fill:#659DF5; --ink:#161614; --mask:url(assets/blobA.svg); --rot:6.99deg;   width:199px; height:85px; left:calc(92% - 99px);  top:170px;"><span class="blob__shape"></span><span class="blob__label">Advertisement</span></a>
+      </div>
+
+    </div>
+  </footer>
+
+  <script>
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* ---- orchestrated intro: reveal the whole panel on scroll-in ---- */
+    (function () {
+      var panel = document.getElementById("panel");
+      if (!panel) return;
+      function reveal() { panel.classList.add("is-in"); }
+      if (!("IntersectionObserver" in window)) { reveal(); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { reveal(); io.disconnect(); } });
+      }, { threshold: 0.18, rootMargin: "-40px 0px" });
+      io.observe(panel);
+      requestAnimationFrame(function () {
+        var r = panel.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) requestAnimationFrame(reveal);
+      });
+    })();
+
+    /* ---- hand follows the mouse (fine pointers only) ---------------- */
+    (function () {
+      var hand = document.getElementById("hand");
+      if (!hand || reduce) return;
+      if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+      var BASE = 3.57;
+      var rot = BASE, tx = 0, ty = 0;
+      var tRot = BASE, tTx = 0, tTy = 0;
+      var active = false;
+
+      function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+      window.addEventListener("mousemove", function (e) {
+        var r = hand.getBoundingClientRect();
+        if (!r.width) return;
+        var dx = e.clientX - (r.left + r.width / 2);
+        var dy = e.clientY - (r.top + r.height / 2);
+        tRot = BASE + clamp(dx * 0.03, -16, 16);   // tilt toward cursor
+        tTx  = clamp(dx * 0.018, -12, 12);          // subtle parallax
+        tTy  = clamp(dy * 0.018, -10, 10);
+        if (!active) { active = true; requestAnimationFrame(loop); }
+      }, { passive: true });
+
+      // ease back to rest when the cursor leaves the window
+      window.addEventListener("mouseout", function (e) {
+        if (e.relatedTarget === null) {
+          tRot = BASE; tTx = 0; tTy = 0;
+          if (!active) { active = true; requestAnimationFrame(loop); }
+        }
+      }, { passive: true });
+
+      function loop() {
+        rot += (tRot - rot) * 0.12;                 // spring-like lerp
+        tx  += (tTx  - tx)  * 0.12;
+        ty  += (tTy  - ty)  * 0.12;
+        hand.style.transform = "translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px) rotate(" + rot.toFixed(2) + "deg)";
+        if (Math.abs(tRot - rot) > 0.05 || Math.abs(tTx - tx) > 0.1 || Math.abs(tTy - ty) > 0.1) {
+          requestAnimationFrame(loop);
+        } else { active = false; }
+      }
+    })();
+  </script>
+</body>
+</html>
