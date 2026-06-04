@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hero Atmosphere · Braille (Reactive)</title>
+<!--
+  Standalone extraction of HeroAtmosphereReactive.
+  Source (verbatim physics):
+    packages/brand-stsl/src/components/HeroAtmosphereReactive.tsx
+      - Constants (CELL_W/H, COL_X, ROW_Y, DOT_R, FIELD_*, SPRING, DAMPING): lines 28-38
+      - Dot struct: lines 40-47
+      - hexToRgb: lines 55-63
+      - buildDots: lines 89-107
+      - resize / dpr handling: lines 109-118
+      - mouse onMove/onLeave: lines 131-139
+      - drawStatic: lines 148-159
+      - forcefield integration tick(): lines 173-228
+  Colors/fonts from packages/brand-stsl/src/styles.css
+    accent teal #017A6A, bg-canvas parchment #FBF8F2, Source Serif 4 / Inter / JetBrains Mono.
+  React shell (useEffect/useRef) unwrapped into DOMContentLoaded + <canvas> + RAF.
+-->
+<style>
+  :root {
+    --accent-default: #017A6A;
+    --bg-canvas: #FBF8F2;
+    --emphasis: #1a356a;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg-canvas);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  .demo-stage {
+    position: relative;
+    width: 900px;
+    height: 520px;
+    max-width: calc(100vw - 32px);
+    background: var(--bg-canvas);
+    border: 1px solid rgba(11, 12, 15, 0.10);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(11,12,15,0.04), 0 12px 40px rgba(11,12,15,0.06);
+  }
+
+  .demo-stage .field {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .demo-stage canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    contain: layout paint;
+  }
+
+  /* Top edge fade (from source render: linear-gradient bg-canvas -> transparent) */
+  .demo-stage .top-fade {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, var(--bg-canvas) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .demo-label {
+    position: absolute;
+    left: 20px;
+    bottom: 18px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .demo-label .title {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--emphasis);
+    opacity: 0.78;
+  }
+  .demo-label .tag {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-default);
+    opacity: 0.9;
+  }
+</style>
+</head>
+<body>
+  <div class="demo-stage" id="stage">
+    <div class="field" id="wrap" aria-hidden="true">
+      <canvas id="canvas"></canvas>
+      <div class="top-fade"></div>
+    </div>
+    <div class="demo-label">
+      <span class="title">Hero Atmosphere · Braille (Reactive)</span>
+      <span class="tag">cursor-aware</span>
+    </div>
+  </div>
+
+<script>
+// ---- Constants lifted verbatim from HeroAtmosphereReactive.tsx (lines 28-38) ----
+const CELL_W = 24;
+const CELL_H = 34;
+const COL_X  = [6, 18];
+const ROW_Y  = [6, 17, 28];
+const DOT_R  = 1.2;
+
+const FIELD_RADIUS = 130;     // px — repulsion sphere of influence
+const FIELD_PUSH   = 38;      // px — peak displacement at cursor center
+const SPRING       = 0.075;   // per-frame pull back to base position
+const DAMPING      = 0.82;    // velocity damping per frame
+
+// hexToRgb (lines 55-63)
+function hexToRgb(hex) {
+  const m = hex.replace('#', '').match(/.{2}/g);
+  if (!m || m.length < 3) return [1, 122, 106];
+  return [
+    parseInt(m[0] ?? '00', 16),
+    parseInt(m[1] ?? '00', 16),
+    parseInt(m[2] ?? '00', 16),
+  ];
+}
+function readToken(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const wrap = document.getElementById('wrap');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  if (!ctx) return;
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const [r, g, b] = hexToRgb(readToken('--accent-default', '#017A6A'));
+
+  let dots = [];
+  let cssW = 0;
+  let cssH = 0;
+  const wrapEl = wrap;
+  const canvasEl = canvas;
+  const context = ctx;
+
+  // buildDots (lines 89-107)
+  function buildDots(width, height) {
+    const next = [];
+    const cols = Math.ceil(width / CELL_W) + 1;
+    const rows = Math.ceil(height / CELL_H) + 1;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const ox = c * CELL_W;
+        const oy = r * CELL_H;
+        for (const cx of COL_X) {
+          for (const cy of ROW_Y) {
+            const x = ox + cx;
+            const y = oy + cy;
+            next.push({ bx: x, by: y, cx: x, cy: y, vx: 0, vy: 0 });
+          }
+        }
+      }
+    }
+    return next;
+  }
+
+  // resize / dpr handling (lines 109-118)
+  function resize() {
+    const rect = wrapEl.getBoundingClientRect();
+    cssW = rect.width > 0 ? rect.width : 480;
+    cssH = rect.height > 0 ? rect.height : 480;
+    canvasEl.width = Math.round(cssW * dpr);
+    canvasEl.height = Math.round(cssH * dpr);
+    canvasEl.style.width  = `${cssW}px`;
+    canvasEl.style.height = `${cssH}px`;
+    dots = buildDots(cssW, cssH);
+  }
+  resize();
+
+  let ro = null;
+  if (typeof ResizeObserver !== 'undefined') {
+    ro = new ResizeObserver(() => resize());
+    ro.observe(wrapEl);
+  }
+
+  // Mouse position. -1000,-1000 = no cursor (forcefield off).
+  let mouseX = -1000;
+  let mouseY = -1000;
+
+  function onMove(e) {
+    const rect = wrapEl.getBoundingClientRect();
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
+  }
+  function onLeave() {
+    mouseX = -1000;
+    mouseY = -1000;
+  }
+
+  // Listen on the stage card so the cursor anywhere in it engages the
+  // forcefield (canvas overlay is decorative). Mirrors source's root listener.
+  const root = wrapEl.closest('.demo-stage') ?? wrapEl.parentElement ?? wrap;
+  root.addEventListener('mousemove', onMove, { passive: true });
+  root.addEventListener('mouseleave', onLeave);
+
+  // drawStatic (lines 148-159)
+  function drawStatic() {
+    context.save();
+    context.scale(dpr, dpr);
+    context.clearRect(0, 0, cssW, cssH);
+    context.fillStyle = `rgba(${r}, ${g}, ${b}, 0.18)`;
+    for (const d of dots) {
+      context.beginPath();
+      context.arc(d.bx, d.by, DOT_R, 0, Math.PI * 2);
+      context.fill();
+    }
+    context.restore();
+  }
+
+  if (reduced) {
+    drawStatic();
+    return;
+  }
+
+  let raf = 0;
+
+  // forcefield integration tick (lines 173-228)
+  function tick() {
+    context.save();
+    context.scale(dpr, dpr);
+    context.clearRect(0, 0, cssW, cssH);
+
+    const fieldR2 = FIELD_RADIUS * FIELD_RADIUS;
+
+    for (const d of dots) {
+      // Forcefield repulsion — only if cursor is inside influence radius.
+      if (mouseX > -500) {
+        const dx = d.cx - mouseX;
+        const dy = d.cy - mouseY;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < fieldR2 && d2 > 0.01) {
+          const dist = Math.sqrt(d2);
+          // Falloff: linear from 1 at center to 0 at radius edge.
+          const falloff = 1 - dist / FIELD_RADIUS;
+          const push = FIELD_PUSH * falloff;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          // Target position = base + (radial direction × push)
+          const tx = d.bx + nx * push;
+          const ty = d.by + ny * push;
+          // Pull current toward target (gentle) instead of hard-setting,
+          // so the dot eases into the displaced position.
+          d.vx += (tx - d.cx) * 0.18;
+          d.vy += (ty - d.cy) * 0.18;
+        } else {
+          // Outside field — spring back to base.
+          d.vx += (d.bx - d.cx) * SPRING;
+          d.vy += (d.by - d.cy) * SPRING;
+        }
+      } else {
+        // Cursor not in hero — spring back.
+        d.vx += (d.bx - d.cx) * SPRING;
+        d.vy += (d.by - d.cy) * SPRING;
+      }
+
+      d.vx *= DAMPING;
+      d.vy *= DAMPING;
+      d.cx += d.vx;
+      d.cy += d.vy;
+    }
+
+    // Single fillStyle for the whole pass — alpha stays uniform so
+    // the field reads as a coherent layer, not a heatmap.
+    context.fillStyle = `rgba(${r}, ${g}, ${b}, 0.22)`;
+    for (const d of dots) {
+      context.beginPath();
+      context.arc(d.cx, d.cy, DOT_R, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    context.restore();
+    raf = requestAnimationFrame(tick);
+  }
+
+  raf = requestAnimationFrame(tick);
+});
+</script>
+</body>
+</html>

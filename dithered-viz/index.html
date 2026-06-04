@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dithered Tile Viz — AGMB (standalone)</title>
+<!--
+  Standalone extraction of the AGMB design-system "Dithered Tile Viz".
+  Engine ported verbatim from agmb-design-system:
+    - components/viz/TileViz.tsx  (Bayer-8 ordered dither + iron-filings cursor repulsion)
+    - lib/silhouettes.ts          (the 5 per-product silhouette draw functions + hexToRgb)
+  React useEffect/useRef unwrapped to plain per-canvas init. IntersectionObserver
+  pause-when-offscreen dropped (always-visible demo); reduced-motion = static.
+-->
+<style>
+  :root{
+    --bg:#070f1e; --panel:#0a1730; --tile:#0c1f3a; --line:rgba(255,255,255,.08);
+    --ink:#eef3fb; --muted:#8aa0c0;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100dvh;
+       display:grid;place-items:center;padding:24px;-webkit-font-smoothing:antialiased}
+  .demo-stage{
+    width:min(960px,100%); background:var(--panel); border:1px solid var(--line);
+    border-radius:20px; padding:clamp(18px,3vw,32px);
+  }
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media (min-width:760px){ .grid{grid-template-columns:repeat(3,1fr)} }
+  .tile{display:flex;flex-direction:column;gap:8px}
+  .tile__host{position:relative;width:100%;aspect-ratio:16/10;background:var(--tile);
+              border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .tile__host canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .tile__label{font-family:var(--mono);font-size:.72rem;letter-spacing:.02em;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="demo-stage" id="stage">
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <script>
+  // ---- lib/silhouettes.ts (verbatim) -------------------------------------
+  function hexToRgb(hex){ var m=hex.replace("#",""); return {
+    r:parseInt(m.substring(0,2),16), g:parseInt(m.substring(2,4),16), b:parseInt(m.substring(4,6),16) }; }
+
+  var SILHOUETTES = {
+    nhf:function(ctx,w,h){
+      ctx.fillStyle="#fff"; var base=h*0.88, houseW=w*0.5, houseH=h*0.6, hx=(w-houseW)/2, hy=base-houseH;
+      ctx.beginPath(); ctx.moveTo(hx-14,hy+6); ctx.lineTo(hx+houseW/2,hy-houseH*0.32); ctx.lineTo(hx+houseW+14,hy+6); ctx.closePath(); ctx.fill();
+      ctx.fillRect(hx+houseW*0.74,hy-houseH*0.24,houseW*0.08,houseH*0.3);
+      ctx.fillRect(hx,hy,houseW,houseH);
+      var upH=houseH*0.22, upY=hy+houseH*0.1, upW=houseW*0.18;
+      ctx.clearRect(hx+houseW*0.1,upY,upW,upH); ctx.clearRect(hx+houseW*0.41,upY,upW,upH); ctx.clearRect(hx+houseW*0.72,upY,upW,upH);
+      var gfTop=hy+houseH*0.52, gfH=houseH*0.36;
+      ctx.clearRect(hx+houseW*0.08,gfTop,houseW*0.2,gfH*0.78); ctx.clearRect(hx+houseW*0.72,gfTop,houseW*0.2,gfH*0.78);
+      ctx.clearRect(hx+houseW*0.41,gfTop-houseH*0.04,houseW*0.18,gfH*0.96);
+      ctx.beginPath(); ctx.arc(hx-houseW*0.1,base-houseH*0.18,houseH*0.1,0,Math.PI*2); ctx.fill();
+      ctx.fillRect(hx-houseW*0.1-3,base-houseH*0.08,6,houseH*0.08);
+      ctx.beginPath(); ctx.arc(hx+houseW+houseW*0.1,base-houseH*0.18,houseH*0.1,0,Math.PI*2); ctx.fill();
+      ctx.fillRect(hx+houseW+houseW*0.1-3,base-houseH*0.08,6,houseH*0.08);
+      ctx.fillRect(0,base,w,3);
+    },
+    mreif:function(ctx,w,h){
+      ctx.fillStyle="#fff"; var base=h*0.88, lw=w*0.3, lh=h*0.36, lx=w*0.04, ly=base-lh;
+      ctx.beginPath(); ctx.moveTo(lx-6,ly+4); ctx.lineTo(lx+lw/2,ly-lh*0.4); ctx.lineTo(lx+lw+6,ly+4); ctx.closePath(); ctx.fill();
+      ctx.fillRect(lx,ly,lw,lh);
+      ctx.clearRect(lx+lw*0.12,ly+lh*0.2,lw*0.3,lh*0.45); ctx.clearRect(lx+lw*0.58,ly+lh*0.32,lw*0.3,lh*0.6);
+      var ax=w*0.4, ay=base-h*0.28, ah=h*0.06;
+      ctx.fillRect(ax,ay,w*0.14,ah);
+      ctx.beginPath(); ctx.moveTo(ax+w*0.14,ay-ah*0.6); ctx.lineTo(ax+w*0.14+ah*1.2,ay+ah/2); ctx.lineTo(ax+w*0.14,ay+ah*1.6); ctx.closePath(); ctx.fill();
+      var rw=w*0.32, rh=h*0.74, rx=w*0.62, ry=base-rh;
+      ctx.fillRect(rx-4,ry-h*0.025,rw+8,h*0.025); ctx.fillRect(rx,ry,rw,rh);
+      for(var row=0;row<3;row++){ for(var col=0;col<3;col++){ var wx=rx+rw*(0.1+col*0.28), wy=ry+rh*(0.08+row*0.25); ctx.clearRect(wx,wy,rw*0.2,rh*0.16); } }
+      ctx.clearRect(rx+rw*0.38,ry+rh*0.84,rw*0.24,rh*0.16);
+      ctx.fillRect(0,base,w,3);
+    },
+    construction:function(ctx,w,h){
+      ctx.fillStyle="#fff"; var base=h*0.88, pw=w*0.2, gap=w*0.046, x=w*0.025;
+      ctx.fillRect(x,base-h*0.08,pw,h*0.08); x+=pw+gap;
+      var fh=h*0.52, fy=base-fh, colW=pw*0.06;
+      for(var i=0;i<4;i++) ctx.fillRect(x+(pw-colW)*(i/3),fy,colW,fh);
+      ctx.fillRect(x,fy,pw,h*0.02); ctx.fillRect(x,fy+fh*0.5-h*0.01,pw,h*0.02); ctx.fillRect(x,fy+fh-h*0.02,pw,h*0.02); x+=pw+gap;
+      var wh3=h*0.58, w3y=base-wh3;
+      ctx.fillRect(x,w3y,pw,wh3);
+      ctx.clearRect(x+pw*0.52,w3y+wh3*0.5,pw*0.5,wh3*0.5); ctx.clearRect(x+pw*0.15,w3y+wh3*0.15,pw*0.28,wh3*0.18); ctx.clearRect(x+pw*0.55,w3y+wh3*0.15,pw*0.28,wh3*0.18); x+=pw+gap;
+      var wh4=h*0.66, w4y=base-wh4;
+      ctx.beginPath(); ctx.moveTo(x-4,w4y+4); ctx.lineTo(x+pw/2,w4y-h*0.1); ctx.lineTo(x+pw+4,w4y+4); ctx.closePath(); ctx.fill();
+      ctx.fillRect(x,w4y,pw,wh4);
+      for(var r2=0;r2<3;r2++){ for(var c2=0;c2<2;c2++){ ctx.clearRect(x+pw*(0.18+c2*0.4),w4y+wh4*(0.1+r2*0.22),pw*0.26,wh4*0.14); } }
+      ctx.clearRect(x+pw*0.4,w4y+wh4*0.78,pw*0.22,wh4*0.22);
+      ctx.fillRect(0,base,w,3);
+    },
+    reif:function(ctx,w,h){
+      ctx.fillStyle="#fff"; var base=h*0.84;
+      var buildings=[
+        {x:0.0,w:0.1,hRatio:0.42,cols:3,rows:5},{x:0.09,w:0.09,hRatio:0.6,cols:3,rows:7},
+        {x:0.17,w:0.12,hRatio:0.86,cols:4,rows:10},{x:0.28,w:0.1,hRatio:0.55,cols:3,rows:6},
+        {x:0.37,w:0.09,hRatio:0.72,cols:3,rows:8},{x:0.45,w:0.13,hRatio:0.98,cols:4,rows:12},
+        {x:0.57,w:0.09,hRatio:0.62,cols:3,rows:7},{x:0.65,w:0.12,hRatio:0.8,cols:4,rows:9},
+        {x:0.76,w:0.1,hRatio:0.55,cols:3,rows:6},{x:0.85,w:0.1,hRatio:0.42,cols:3,rows:5},
+        {x:0.93,w:0.07,hRatio:0.36,cols:2,rows:4}
+      ];
+      for(var bi=0;bi<buildings.length;bi++){ var b=buildings[bi];
+        var bx=b.x*w, bw=b.w*w, bh=b.hRatio*base*0.9, by=base-bh;
+        ctx.fillRect(bx,by,bw,bh);
+        var padX=0.14, padY=0.05, colW=(bw*(1-2*padX))/b.cols, rowH=(bh*(1-2*padY))/b.rows;
+        var winW=colW*0.55, winH=rowH*0.55, offX=(colW-winW)/2, offY=(rowH-winH)/2;
+        for(var r3=0;r3<b.rows;r3++){ for(var c3=0;c3<b.cols;c3++){
+          var wx=bx+bw*padX+c3*colW+offX, wy=by+bh*padY+r3*rowH+offY;
+          if(winW>0.8&&winH>0.8) ctx.clearRect(wx,wy,winW,winH);
+        } }
+      }
+      ctx.fillRect(0,base,w,3);
+    },
+    commercial:function(ctx,w,h){
+      ctx.fillStyle="#fff"; var base=h*0.88, bw=w*0.76, bh=h*0.66, bx=(w-bw)/2, by=base-bh;
+      ctx.fillRect(bx,by,bw,bh);
+      var sigY=by+bh*0.04, sigH=bh*0.1;
+      ctx.fillRect(bx-6,sigY,bw+12,sigH);
+      for(var i=0;i<5;i++) ctx.clearRect(bx+bw*(0.22+i*0.12),sigY+sigH*0.25,bw*0.06,sigH*0.5);
+      var awY=by+bh*0.46; ctx.fillRect(bx-10,awY,bw+20,bh*0.05);
+      var upY=by+bh*0.22, upH=bh*0.16;
+      for(var j=0;j<4;j++) ctx.clearRect(bx+bw*(0.09+j*0.21),upY,bw*0.14,upH);
+      var gfY=by+bh*0.58, gfH=bh*0.36;
+      ctx.clearRect(bx+bw*0.07,gfY,bw*0.22,gfH*0.92); ctx.clearRect(bx+bw*0.39,gfY,bw*0.22,gfH*0.92); ctx.clearRect(bx+bw*0.71,gfY,bw*0.22,gfH*0.92);
+      ctx.fillRect(0,base,w,3);
+    }
+  };
+
+  // ---- TileViz.tsx engine (verbatim physics, unwrapped from React) -------
+  var BAYER8=(function(){ var m=[
+    0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,
+    3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21];
+    var out=new Float32Array(64); for(var i=0;i<64;i++) out[i]=m[i]/64; return out; })();
+
+  function initTile(host, canvas, viz, accent, ar, scale){
+    scale = scale || 1;
+    var ctx = canvas.getContext("2d");
+    var silhouette = SILHOUETTES[viz];
+    if(!ctx || !silhouette) return;
+    var accentRGB = hexToRgb(accent);
+    var RADIUS=130, MAX_PUSH=14, FOLLOW_LERP=0.15, DISP_LERP=0.2, DOT_ALPHA=0.88, DOT=2, SAMPLE_STEP=3;
+    var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var particles=[], mouse={x:-10000,y:-10000,active:false}, smooth={x:-10000,y:-10000};
+    var raf=0, needsSeed=true, cw=0, ch=0;
+
+    function seed(){
+      var rect=canvas.getBoundingClientRect();
+      var dpr=Math.min(window.devicePixelRatio||1,2);
+      canvas.width=Math.max(2,Math.floor(rect.width*dpr));
+      canvas.height=Math.max(2,Math.floor(rect.height*dpr));
+      ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+      cw=rect.width; ch=rect.height;
+      var off=document.createElement("canvas"); off.width=Math.floor(cw); off.height=Math.floor(ch);
+      var octx=off.getContext("2d");
+      var bw=off.width, bh=bw/ar;
+      if(bh>off.height){ bh=off.height; bw=bh*ar; }
+      bw*=scale; bh*=scale;
+      var ox=(off.width-bw)/2, oy=off.height-bh;
+      octx.save(); octx.translate(ox,oy); silhouette(octx,bw,bh); octx.restore();
+      var data=octx.getImageData(0,0,off.width,off.height).data;
+      particles=[];
+      for(var y=0;y<off.height;y+=SAMPLE_STEP){ for(var x=0;x<off.width;x+=SAMPLE_STEP){
+        var a8=data[(y*off.width+x)*4+3];
+        if(a8>24 && a8/255 > BAYER8[(y&7)*8+(x&7)]){
+          particles.push({bx:x+(Math.random()-0.5)*1.4, by:y+(Math.random()-0.5)*1.4, dx:0, dy:0});
+        }
+      } }
+      needsSeed=false;
+    }
+    function render(){
+      ctx.clearRect(0,0,cw,ch);
+      if(mouse.active){ if(smooth.x<-9000){smooth.x=mouse.x;smooth.y=mouse.y;} else {smooth.x+=(mouse.x-smooth.x)*FOLLOW_LERP; smooth.y+=(mouse.y-smooth.y)*FOLLOW_LERP;} }
+      var R=RADIUS;
+      ctx.fillStyle="rgba("+accentRGB.r+","+accentRGB.g+","+accentRGB.b+","+DOT_ALPHA+")";
+      for(var i=0,n=particles.length;i<n;i++){ var p=particles[i]; var tx=0,ty=0;
+        if(mouse.active){ var dx=p.bx-smooth.x, dy=p.by-smooth.y, d=Math.sqrt(dx*dx+dy*dy);
+          if(d<R && d>0.0001){ var s=Math.pow(1-d/R,2); tx=(dx/d)*MAX_PUSH*s; ty=(dy/d)*MAX_PUSH*s; } }
+        p.dx+=(tx-p.dx)*DISP_LERP; p.dy+=(ty-p.dy)*DISP_LERP;
+        ctx.fillRect(p.bx+p.dx,p.by+p.dy,DOT,DOT);
+      }
+    }
+    function drawStatic(){ ctx.clearRect(0,0,cw,ch); ctx.fillStyle="rgba("+accentRGB.r+","+accentRGB.g+","+accentRGB.b+","+DOT_ALPHA+")";
+      for(var i=0;i<particles.length;i++){ var p=particles[i]; ctx.fillRect(p.bx,p.by,DOT,DOT);} }
+    function loop(){ render(); raf=requestAnimationFrame(loop); }
+    function start(){ if(needsSeed) seed(); if(REDUCED){ drawStatic(); return; } if(!raf) loop(); }
+    function onMove(e){ var rect=canvas.getBoundingClientRect(); mouse.x=e.clientX-rect.left; mouse.y=e.clientY-rect.top; if(!mouse.active){smooth.x=mouse.x;smooth.y=mouse.y;} mouse.active=true; }
+    function onLeave(){ mouse.active=false; }
+    if(!REDUCED){ host.addEventListener("mousemove",onMove); host.addEventListener("mouseleave",onLeave); }
+    window.addEventListener("resize", function(){ needsSeed=true; }, {passive:true});
+    // run on load (no offscreen pause)
+    start();
+  }
+
+  // ---- 5-tile config (from agmb-design-system app/page.tsx) --------------
+  var TILES=[
+    {kind:"nhf",          label:"NHF · house",            accent:"#1A7A4A", ar:1.5},
+    {kind:"mreif",        label:"M-REIF · refinance",     accent:"#1F4FA8", ar:1.8},
+    {kind:"construction", label:"Construction · phases",  accent:"#E0B040", ar:2.4},
+    {kind:"reif",         label:"REIF · skyline",         accent:"#1A7A4A", ar:2.8},
+    {kind:"commercial",   label:"Commercial · storefront",accent:"#1F4FA8", ar:1.7}
+  ];
+  var grid=document.getElementById("grid");
+  TILES.forEach(function(t){
+    var tile=document.createElement("div"); tile.className="tile";
+    var host=document.createElement("div"); host.className="tile__host";
+    var cv=document.createElement("canvas");
+    host.appendChild(cv);
+    var lab=document.createElement("div"); lab.className="tile__label"; lab.textContent=t.label;
+    tile.appendChild(host); tile.appendChild(lab); grid.appendChild(tile);
+    // seed after layout so the canvas has size
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ initTile(host, cv, t.kind, t.accent, t.ar, 1); }); });
+  });
+  </script>
+</body>
+</html>

@@ -103,14 +103,14 @@
       "stsl-hero": {
         title: "Hero Atmosphere", label: "Systemspec · cursor-aware",
         caption: "A braille dot-field — <em>move your cursor over it</em> and the texture pushes away from the pointer.",
-        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/", srcnote: "Systemspec design system",
-        mode: "crop", find: { within: ".group\\/stage", text: "HERO ATMOSPHERE" }, viewportW: 1440
+        src: "./atmosphere-hero/", srcnote: "Systemspec · extracted",
+        mode: "crop", find: { selector: ".demo-stage" }, viewportW: 1000
       },
       "stsl-footer": {
         title: "Footer Atmosphere", label: "Systemspec · cursor-aware",
         caption: "Same canvas physics as the hero, <em>warped onto the espresso footer surface</em>. Move your cursor over it.",
-        src: "https://lobzyjay.github.io/Systemspec-website-redesign/design/", srcnote: "Systemspec design system",
-        mode: "crop", find: { within: ".group\\/stage", text: "FOOTER ATMOSPHERE" }, viewportW: 1440
+        src: "./atmosphere-footer/", srcnote: "Systemspec · extracted",
+        mode: "crop", find: { selector: ".demo-stage" }, viewportW: 1000
       },
       "stsl-speedometer": {
         title: "Speedometer Mouse Interaction", label: "STSL case study · drag the scrubber",
@@ -121,8 +121,8 @@
       "agmb-viz": {
         title: "Dithered Tile Viz", label: "AGMB design system · cursor-aware",
         caption: "Per-product silhouettes Bayer-dithered into dot fields — <em>move your cursor over a tile</em> to displace the dots (iron-filings repulsion).",
-        src: "https://lobzyjay.github.io/agmb-design-system/", srcnote: "AGMB design system",
-        mode: "crop", find: { within: "section", text: "Dithered tile viz", canvasGrid: true }, viewportW: 1280
+        src: "./dithered-viz/", srcnote: "AGMB design system · extracted",
+        mode: "crop", find: { selector: ".demo-stage" }, viewportW: 1100
       },
       "voltex-hero": {
         title: "Hero Scene", label: "Voltex · Three.js + Lenis",
