@@ -216,12 +216,15 @@
       var r = el.getBoundingClientRect();
       var left = r.left + win.scrollX, top = r.top + win.scrollY, w = r.width, h = r.height;
       if (!w || !h) return false;
-      // 3) show the element at its NATURAL size — never upscale (don't distort/enlarge),
-      //    only scale down if it's wider than the available space (so it's never cut).
-      var avail = (stage.parentElement ? stage.parentElement.clientWidth : stage.clientWidth);
-      var k = Math.min(1, avail / w);
+      // 3) fit the element inside the viewport — never upscale (no distortion),
+      //    scale down to fit available width AND height so it's fully visible, uncut.
       stage.style.aspectRatio = "auto";
       stage.style.minHeight = "0";
+      stage.style.width = ""; stage.style.height = "";   // reset before measuring space
+      var availW = (stage.parentElement ? stage.parentElement.clientWidth : stage.clientWidth);
+      var stageTop = stage.getBoundingClientRect().top;  // chrome above the stage
+      var availH = Math.max(260, window.innerHeight - stageTop - 80); // reserve the foot row
+      var k = Math.min(1, availW / w, availH / h);
       stage.style.width = Math.round(w * k) + "px";
       stage.style.height = Math.round(h * k) + "px";
       stage.style.marginLeft = "auto";
