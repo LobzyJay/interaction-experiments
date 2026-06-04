@@ -98,7 +98,7 @@
         title: "Footer Interaction", label: "Apex footer · self-built",
         caption: "Blob tags <em>float in one-by-one</em> and un-strike on hover; a hand that tracks your cursor.",
         src: "./apex-footer/", srcnote: "self-built in this repo",
-        mode: "crop", find: { selector: ".footer" }, viewportW: 1280
+        mode: "crop", find: { selector: ".footer" }, viewportW: 1280, hide: [".page-spacer"]
       },
       "stsl-hero": {
         title: "Hero Atmosphere", label: "Systemspec · cursor-aware",
@@ -148,6 +148,7 @@
     var frame = document.getElementById("frame");
     var loading = document.getElementById("loading");
     var openlive = document.getElementById("openlive");
+    var cropState = null;   // {left, top, k} once a crop is applied — used for touch mapping
 
     document.title = s.title + " — Interaction Experiments";
     document.getElementById("title").textContent = s.title;
@@ -202,20 +203,26 @@
 
     function applyCrop() {
       var win = frame.contentWindow, doc = frame.contentDocument;
-      // 1) render the page at a known desktop width FIRST, so the element lays
-      //    out at full size before we measure it.
+      // 1) render at a known desktop width AND a realistic height first. Using a real
+      //    height (not a collapsed 10px) keeps vh/dvh layouts from collapsing, which
+      //    otherwise makes scrollHeight measure short and clips the bottom of the crop.
       frame.style.width = s.viewportW + "px";
-      frame.style.height = "10px";
-      void doc.documentElement.offsetWidth;                 // force reflow at new width
+      frame.style.height = (window.innerHeight || 900) + "px";
+      void doc.documentElement.offsetWidth;
+      hideChrome(doc, s.hide);                              // hide chrome/fillers BEFORE measuring height
       forceVisible(doc, s.forceVisible);                    // un-gate scroll-reveal demos
+      void doc.documentElement.offsetWidth;
+      // size the iframe to the (now stable) content height so nothing is clipped
       frame.style.height = doc.documentElement.scrollHeight + "px";
-      hideChrome(doc, s.hide);
-      // 2) measure the element (now at the correct desktop layout)
+      void doc.documentElement.offsetWidth;
+      // 2) measure the element at the final layout
       var el = findEl(doc, s.find);
       if (!el) return false;
       var r = el.getBoundingClientRect();
       var left = r.left + win.scrollX, top = r.top + win.scrollY, w = r.width, h = r.height;
       if (!w || !h) return false;
+      // guarantee the iframe is at least tall enough to contain the cropped element
+      if (top + h > parseInt(frame.style.height, 10)) frame.style.height = (top + h + 80) + "px";
       // 3) fit the element inside the viewport — never upscale (no distortion),
       //    scale down to fit available width AND height so it's fully visible, uncut.
       stage.style.aspectRatio = "auto";
@@ -231,6 +238,7 @@
       stage.style.marginRight = "auto";
       frame.style.transform = "translate(" + (-left) + "px," + (-top) + "px)";
       scaler.style.transform = "scale(" + k + ")";
+      cropState = { left: left, top: top, k: k };   // for touch→cursor mapping
       return true;
     }
 
@@ -260,6 +268,35 @@
       }
       reveal();
     }
+
+    // Touch playability: cursor-driven demos have no hover on phones. Map a finger
+    // drag over the stage to a synthetic mousemove inside the (same-origin) iframe,
+    // translated through the crop transform, so the demo reacts to touch too.
+    function dispatchPointer(clientX, clientY) {
+      if (!cropState) return;
+      try {
+        var win = frame.contentWindow, doc = frame.contentDocument;
+        var cx = cropState.left + clientX / cropState.k;
+        var cy = cropState.top + clientY / cropState.k;
+        var target = doc.elementFromPoint(cx, cy) || doc.body;
+        ["pointermove", "mousemove"].forEach(function (type) {
+          target.dispatchEvent(new win.MouseEvent(type, { clientX: cx, clientY: cy, bubbles: true }));
+        });
+      } catch (e) {}
+    }
+    stage.addEventListener("touchmove", function (e) {
+      if (!cropState) return;          // scroll-mode demos keep native touch-scroll
+      var t = e.touches[0]; if (!t) return;
+      var r = stage.getBoundingClientRect();
+      dispatchPointer(t.clientX - r.left, t.clientY - r.top);
+      e.preventDefault();              // crop demos: let the finger "draw", not scroll
+    }, { passive: false });
+    stage.addEventListener("touchstart", function (e) {
+      if (!cropState) return;
+      var t = e.touches[0]; if (!t) return;
+      var r = stage.getBoundingClientRect();
+      dispatchPointer(t.clientX - r.left, t.clientY - r.top);
+    }, { passive: true });
 
     if (s.src) {
       frame.title = s.title;
