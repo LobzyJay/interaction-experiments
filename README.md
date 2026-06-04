@@ -1,32 +1,34 @@
 # Interaction Experiments
 
-A growing collection of small, self-contained front-end interaction studies — each one a focused exploration of motion, state, and feel. Built to be opened in a browser with no build step.
+The interactions worth pulling out of my shipped work — collected on one **studies page** that embeds each one **live** (iframed straight from its GitHub Pages deploy), not as screenshots. Hover, scroll, and drag them in place.
 
-Every experiment lives in its own folder and ships as a single page. The table below links to the **live demo** (GitHub Pages) and the **source**.
+**Live studies page:** https://lobzyjay.github.io/interaction-experiments/
 
-> Live demos are served from GitHub Pages at `https://lobzyjay.github.io/interaction-experiments/<experiment>/`. They go live once the repo is pushed and Pages is enabled (Settings → Pages → Deploy from `main` / root).
+Highlight red (`#e40202`) is sampled from [artbyade.com](https://artbyade.com).
 
-## Experiments
+## Studies
 
-| # | Experiment | What it explores | Live | Source |
-|---|------------|------------------|------|--------|
-| 01 | **Apex Footer** | Staggered blob reveal with overshoot settle · hover jiggle + strikethrough wipe-off · orchestrated scroll-in intro (line-mask heading, spin-in logo, section stagger) · cursor-tracking hand | [▶ Demo](https://lobzyjay.github.io/interaction-experiments/apex-footer/) | [`/apex-footer`](./apex-footer) |
+| # | Study | Interaction | Live |
+|---|-------|-------------|------|
+| 01 | **Apex Footer** | Blob tags float in one-by-one + un-strike on hover; orchestrated scroll-in intro; cursor-tracking hand | [self-built](./apex-footer/) |
+| 02 | **Systemspec — Reactive Atmosphere** | Canvas Braille dot-field with a cursor forcefield (push + spring-back); same engine on the parchment hero and the espresso footer | [open](https://lobzyjay.github.io/Systemspec-website-redesign/) |
+| 03 | **AGMB — Scroll Reveals** | GSAP ScrollTrigger line-by-line heading cascades, bidirectional on scroll | [open](https://lobzyjay.github.io/agmb-website/) |
+| 04 | **AGMB — Building Trace Viz** | Self-drawing canvas line-trace over a building photo, parallaxing slower than scroll | [open](https://lobzyjay.github.io/agmb-website/agmb-apply.html) |
+| 05 | **Voltex — Hero** | Three.js WebGL hero scene + HUD + Lenis smooth scroll | [open](https://lobzyjay.github.io/Voltex/) |
+| 06 | **Pacific Blue — Wind Turbine** | Three.js GLB turbine, scroll-driven camera orbit, sticky content phases | [open](https://lobzyjay.github.io/Pacific-blue/#gen-section) |
 
-## Stack
+## How it works
 
-Vanilla HTML / CSS / JS — no framework, no bundler. Motion is hardware-accelerated (transform / opacity / clip-path only), gated behind `prefers-reduced-motion` and `(hover: hover)` where appropriate.
+The studies page (`index.html`) is a gallery. Each study is a **click-to-load `<iframe>`** pointing at the live deploy — they share the `lobzyjay.github.io` origin, so framing just works, and nothing loads until you click (six full sites won't boot at once). Apex Footer (study 01) is the one self-built page in this repo (`/apex-footer`); the rest embed their source projects directly.
 
 ## Running locally
 
 ```bash
-# any static server works, e.g.
 cd interaction-experiments
 python3 -m http.server 8000
-# then open http://localhost:8000  (landing page → pick an experiment)
+# open http://localhost:8000
 ```
 
-## Adding a new experiment
+## Adding a study
 
-1. Create a top-level folder (e.g. `magnetic-button/`) with an `index.html`.
-2. Add a row to the table above and a card to the landing `index.html`.
-3. Commit. Once pushed, it's live at `…/interaction-experiments/<folder>/`.
+Add a `<section class="study">` to `index.html` with a `data-src` (live URL or local path) and a row to the table above. No build step.
